@@ -1,4 +1,3 @@
-"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -145,7 +144,7 @@ function Cart() {
           categoryId: book.category,
           description: book.description,
           publisher: book.publisher,
-          publisherYear: book.publisherYear,
+          publishYear: book.publishYear,
           pages: book.pages,
         }
       })
@@ -411,7 +410,7 @@ function Cart() {
                               Tác giả: {item.author}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
-                              Nhà xuất bản: {item.publisher} ({item.publisherYear})
+                              Nhà xuất bản: {item.publisher} ({item.publishYear})
                             </Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
                               Số trang: {item.pages}

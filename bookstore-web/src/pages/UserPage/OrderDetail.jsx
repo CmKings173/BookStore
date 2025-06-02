@@ -154,13 +154,6 @@ function OrderDetail() {
       phone: "0901234567",
       email: "nguyenvana@example.com",
     },
-    billingAddress: {
-      name: "Nguyễn Văn A",
-      address: "123 Đường ABC, Phường 1, Quận 1",
-      city: "TP. Hồ Chí Minh",
-      phone: "0901234567",
-      email: "nguyenvana@example.com",
-    },
     trackingNumber: "VN123456789",
     estimatedDelivery: "2025-06-02",
     timeline: [

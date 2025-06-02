@@ -1,25 +1,25 @@
-import { Route } from 'react-router-dom'
-import AdminLayout from '~/pages/AdminPage/components/AdminLayout'
-import Dashboard from '~/pages/AdminPage/Dashboard'
-import BookList from '~/pages/AdminPage/Books/BookList'
-import BookForm from '~/pages/AdminPage/Books/BookForm'
-import OrderList from '~/pages/AdminPage/Orders/OrderList'
-import UserList from '~/pages/AdminPage/Users/UserList'
-import Statistics from '~/pages/AdminPage/Statistics/SalesStats'
+import { useLocation } from "react-router-dom"
+import AdminLayout from "~/components/Layout/AdminLayout"
 
-const AdminRoutes = () => {
+// Import các trang admin
+import Dashboard from "~/pages/AdminPage/Dashboard"
+// import Books from "../pages/Books"
+// import Orders from "../pages/Orders"
+// import Users from "../pages/Users"
+// import Analytics from "../pages/Analytics"
+// import Settings from "../pages/Settings"
+// import Discounts from "../pages/Discounts"
+
+function AdminRoutes() {
+  const location = useLocation()
+  const path = location.pathname
+  console.log('AdminRoutes - Current Path:', path)
+
   return (
-    <Route path="/admin" element={<AdminLayout />}>
-      <Route index element={<Dashboard />} />
-      <Route path="books" element={<BookList />} />
-      <Route path="books/new" element={<BookForm />} />
-      <Route path="books/:id" element={<BookDetail />} />
-      <Route path="orders" element={<OrderList />} />
-      <Route path="orders/:id" element={<OrderDetail />} />
-      <Route path="users" element={<UserList />} />
-      <Route path="users/:id" element={<UserDetail />} />
-      <Route path="statistics" element={<Statistics />} />
-    </Route>
+    <AdminLayout>
+      {/* Add more conditions here when you uncomment the imports */}
+      <Dashboard />
+    </AdminLayout>
   )
 }
 

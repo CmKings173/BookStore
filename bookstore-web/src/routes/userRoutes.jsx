@@ -1,4 +1,4 @@
-import { Route } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import BookStore from '~/pages/UserPage/HomePage'
 import Cart from '~/pages/UserPage/Cart'
 import BookDetail from '~/pages/UserPage/BookDetail'
@@ -9,19 +9,41 @@ import OrderDetail from '~/pages/UserPage/OrderDetail'
 import Settings from '~/pages/Settings/Settings'
 
 const UserRoutes = () => {
-  return (
-    <>
-      <Route path="/bookstore" element={<BookStore />} />
-      <Route path="/detail/:id" element={<BookDetail />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/order-success" element={<OrderSuccessPage />} />
-      <Route path="/account/orders" element={<OrderHistory />} />
-      <Route path="/account/order-detail" element={<OrderDetail />} />
-      <Route path="/settings/account" element={<Settings />} />
-      <Route path="/settings/security" element={<Settings />} />
-    </>
-  )
+  const location = useLocation()
+  const path = location.pathname
+  console.log('UserRoutes - Current Path:', path)
+
+  if (path.includes('/detail/')) {
+    console.log('Rendering BookDetail')
+    return <BookDetail />
+  }
+  if (path === '/cart') {
+    console.log('Rendering Cart')
+    return <Cart />
+  }
+  if (path === '/checkout') {
+    console.log('Rendering Checkout')
+    return <Checkout />
+  }
+  if (path === '/order-success') {
+    console.log('Rendering OrderSuccess')
+    return <OrderSuccessPage />
+  }
+  if (path === '/account/orders') {
+    console.log('Rendering OrderHistory')
+    return <OrderHistory />
+  }
+  if (path === '/account/order-detail') {
+    console.log('Rendering OrderDetail')
+    return <OrderDetail />
+  }
+  if (path === '/settings/account' || path === '/settings/security') {
+    console.log('Rendering Settings')
+    return <Settings />
+  }
+  
+  console.log('Rendering BookStore (default)')
+  return <BookStore />
 }
 
 export default UserRoutes

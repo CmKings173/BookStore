@@ -105,7 +105,6 @@ function OrderHistory() {
   const [timeFilter, setTimeFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState(1)
-  const [expandedOrder, setExpandedOrder] = useState(null)
   const ordersPerPage = 5
 
   // Mock order data
@@ -140,7 +139,6 @@ function OrderHistory() {
         city: "TP. Hồ Chí Minh",
         phone: "0901234567",
       },
-      trackingNumber: "VN123456789",
       deliveredDate: "2025-05-30",
     },
     {
@@ -165,7 +163,6 @@ function OrderHistory() {
         city: "TP. Hồ Chí Minh",
         phone: "0901234567",
       },
-      trackingNumber: "VN123456790",
       estimatedDelivery: "2025-06-02",
     },
     {
@@ -215,7 +212,6 @@ function OrderHistory() {
         city: "TP. Hồ Chí Minh",
         phone: "0901234567",
       },
-      trackingNumber: "VN123456791",
       deliveredDate: "2025-05-13",
     },
     {
@@ -240,7 +236,6 @@ function OrderHistory() {
         city: "TP. Hồ Chí Minh",
         phone: "0901234567",
       },
-      trackingNumber: "VN123456792",
       deliveredDate: "2025-04-28",
     },
     {
@@ -341,10 +336,6 @@ function OrderHistory() {
 
   const handlePageChange = (event, value) => {
     setPage(value)
-  }
-
-  const handleOrderClick = (orderId) => {
-    setExpandedOrder(expandedOrder === orderId ? null : orderId)
   }
 
   const handleViewOrderDetails = (orderId) => {
@@ -574,9 +565,7 @@ function OrderHistory() {
                     bgcolor: "background.paper",
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    cursor: "pointer",
                   }}
-                  onClick={() => handleOrderClick(order.id)}
                 >
                   <Grid container spacing={2} alignItems="center">
                     <Grid xs={12} sm={7}>
@@ -709,145 +698,6 @@ function OrderHistory() {
                     </Grid>
                   </Grid>
                 </Box>
-
-                {/* Expanded order details */}
-                {expandedOrder === order.id && (
-                  <Box sx={{ p: 3, bgcolor: "background.paper", borderTop: "1px solid" }}>
-                    <Typography variant="subtitle1" fontWeight="600" gutterBottom>
-                      Thông tin chi tiết
-                    </Typography>
-
-                    <Grid container spacing={3}>
-                      <Grid xs={12} md={6}>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          Địa chỉ giao hàng
-                        </Typography>
-                        <Typography variant="body1" fontWeight="500">
-                          {order.shippingAddress.name}
-                        </Typography>
-                        <Typography variant="body1">
-                          {order.shippingAddress.address}, {order.shippingAddress.city}
-                        </Typography>
-                        <Typography variant="body1">SĐT: {order.shippingAddress.phone}</Typography>
-                      </Grid>
-
-                      <Grid xs={12} md={6}>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          Thông tin vận chuyển
-                        </Typography>
-                        {order.trackingNumber ? (
-                          <>
-                            <Typography variant="body1">
-                              <strong>Mã vận đơn:</strong> {order.trackingNumber}
-                            </Typography>
-                            {order.status === "shipped" && order.estimatedDelivery && (
-                              <Typography variant="body1">
-                                <strong>Dự kiến giao hàng:</strong> {formatDate(order.estimatedDelivery)}
-                              </Typography>
-                            )}
-                            {order.status === "delivered" && order.deliveredDate && (
-                              <Typography variant="body1">
-                                <strong>Ngày giao hàng:</strong> {formatDate(order.deliveredDate)}
-                              </Typography>
-                            )}
-                          </>
-                        ) : order.status === "cancelled" ? (
-                          <>
-                            <Typography variant="body1">
-                              <strong>Lý do hủy:</strong> {order.cancelReason}
-                            </Typography>
-                            <Typography variant="body1">
-                              <strong>Ngày hủy:</strong> {formatDate(order.cancelDate)}
-                            </Typography>
-                          </>
-                        ) : (
-                          <Typography variant="body1">Chưa có thông tin vận chuyển</Typography>
-                        )}
-                      </Grid>
-
-                      <Grid xs={12}>
-                        <Typography variant="subtitle1" fontWeight="600" gutterBottom sx={{ mt: 2 }}>
-                          Chi tiết thanh toán
-                        </Typography>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Sản phẩm</TableCell>
-                                <TableCell align="right">Đơn giá</TableCell>
-                                <TableCell align="right">Số lượng</TableCell>
-                                <TableCell align="right">Thành tiền</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {order.items.map((item) => (
-                                <TableRow key={item.id}>
-                                  <TableCell>
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                      <Box
-                                        component="img"
-                                        src={item.image}
-                                        alt={item.title}
-                                        sx={{
-                                          width: 40,
-                                          height: 40,
-                                          objectFit: "contain",
-                                          display: { xs: "none", sm: "block" },
-                                        }}
-                                      />
-                                      <Box>
-                                        <Typography variant="body2" fontWeight="500">
-                                          {item.title}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                          {item.author}
-                                        </Typography>
-                                      </Box>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell align="right">{formatPrice(item.price)}</TableCell>
-                                  <TableCell align="right">{item.quantity}</TableCell>
-                                  <TableCell align="right">{formatPrice(item.price * item.quantity)}</TableCell>
-                                </TableRow>
-                              ))}
-                              <TableRow>
-                                <TableCell colSpan={2} />
-                                <TableCell align="right">
-                                  <Typography variant="body2" fontWeight="500">
-                                    Tạm tính
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align="right">{formatPrice(order.total - 30000)}</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell colSpan={2} />
-                                <TableCell align="right">
-                                  <Typography variant="body2" fontWeight="500">
-                                    Phí vận chuyển
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align="right">{formatPrice(30000)}</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell colSpan={2} />
-                                <TableCell align="right">
-                                  <Typography variant="subtitle2" fontWeight="600">
-                                    Tổng cộng
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align="right">
-                                  <Typography variant="subtitle2" fontWeight="600" color="primary">
-                                    {formatPrice(order.total)}
-                                  </Typography>
-                                </TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
               </Paper>
             ))}
 
