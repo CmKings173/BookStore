@@ -1,108 +1,99 @@
 /* eslint-disable no-useless-catch */
 
 import { slugify } from '~/utils/formatter'
-import { boardModel } from '~/models/boardModel'
+import { bookModel } from '~/models/bookModel'
+import { categoryModel } from '~/models/categoryModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
-import { cardModel } from '~/models/cardModel'
-import { columnModel } from '~/models/columnModel'
 import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_PAGE } from '~/utils/constants'
 
-const createNew = async (userId, reqBody) => {
+const createNew = async (reqBody) => {
   try {
-    // Xử lí dữ liệu từy đặc thù dự ánán
-    const newBoard = {
+    // Xử lí dữ liệu từy đặc thù dự án
+    const newBook = {
       ...reqBody,
       slug: slugify(reqBody.title)
     }
-    // Gọi tới tầng Model để xử lí lưu bản ghi newBoard vào Database
-    const createdBoard = await boardModel.createNew(userId, newBoard)
+    console.log(newBook)
+    // Gọi tới tầng Model để xử lí lưu bản ghi newBook vào Database
+    const createdBook = await bookModel.createNew(newBook)
 
     // Lấy bản ghi sau khi gọi  ( tùy mục đích dự án )
-    const getNewBoard = await boardModel.findOneById(createdBoard.insertedId)
+    const getNewBook = await bookModel.findOneById(createdBook.insertedId)
 
     // Trả kết quả về controller ( luôn phải có return)
-    return getNewBoard
+    return getNewBook
   } catch (error) { throw new Error(error)}
 }
 
-const getDetails = async (userId, boardId) => {
+const getDetails = async (bookId) => {
   try {
-
-    const board = await boardModel.getDetails(userId, boardId)
-    // console.log(board)
-    if (!board) {
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+    // Lấy thông tin sách
+    const book = await bookModel.findOneById(bookId)
+    if (!book) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Book not found!')
     }
-    // B1: Deep Clone board ra một cái mới để xử lí, không ảnh hưởng tới board ban đầu
-    // (Tùy mục đích về sau mà có cần clone deep hay không)
-    const resBoard = cloneDeep(board)
 
-    // B2: Đưa card về đúng column của nó
-    resBoard.columns.forEach( column => {
-      //Convert bằng hàm equals của mongodb
-      column.cards = resBoard.cards.filter(card => card.columnId.equals(column._id))
+    // Lấy thông tin category
+    const category = await categoryModel.findOneById(book.categoryId)
+    if (!category) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found!')
+    }
 
-      //Convert bằng hàm toString của javascript
-      // column.cards = resBoard.cards.filter(card => card.columnId.toString() === column._id.toString())
-    })
+    // Kết hợp thông tin
+    const result = {
+      ...book,
+      categoryName: category.name
+    }
 
-    // B3: Xóa mảng cards khỏi board ban đầu
-    delete resBoard.cards
-
-    return resBoard
+    return result
   } catch (error) { throw error }
 }
 
-const update = async (boardId, reqBody) => {
+const deleteBook = async (bookId) => {
+  try {
+    // Xóa book theo Id
+    await bookModel.deleteBook(bookId)
+    return { deleteMessage: 'Book deleted successfully!' }
+  } catch (error) { throw error }
+}
+
+
+const getAllBooks = async (page, itemsPerPage) => {
+  try {
+
+    // Nếu không có giá trị page hoặc itemsPerPage được truyền từ FE, gán giá trị mặc định
+    if (!page) page = DEFAULT_PAGE
+    if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
+
+    const results = await bookModel.getAllBooks(parseInt(page, 10), parseInt(itemsPerPage, 10))
+
+    return results
+  } catch (error) { throw error }
+}
+
+const updateBook = async (bookId, categoryId, reqBody) => {
   try {
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()
     }
-    const updatedBoard = await boardModel.update(boardId, updateData)
+    const updatedBook = await bookModel.update(bookId, categoryId, updateData)
 
-    return updatedBoard
+    return updatedBook
   } catch (error) { throw new Error(error)}
 }
 
-const moveCardToDifferentColumn = async ( reqBody ) => {
-  try {
-    // Cập nhật mảng cardOrderIds của column ban đầu chứa nó ( xóa cái _id của card cần kéo)
-    await columnModel.update(reqBody.prevColumnId, {
-      cardOrderIds: reqBody.prevCardOrderIds,
-      updatedAt: Date.now()
-    })
-    // Cập nhật mảng cardOrderIds của column mới chứa nó ( thêm cái _id của card cần kéo)
-    await columnModel.update(reqBody.nextColumnId, {
-      cardOrderIds: reqBody.nextCardOrderIds,
-      updatedAt: Date.now()
-    })
-    // Cập nhật lại columnId của card đã kéo
-    await cardModel.update(reqBody.currentCardId, {
-      columnId: reqBody.nextColumnId,
-      updatedAt: Date.now()
-    })
-    return { updateResult: 'Successfully!' }
-  } catch (error) { throw new Error(error)}
-}
-// Get list board
-const getBoards = async (userId, page, itemsPerPage) => {
-  try {
-    // Nếu không có giá trị page hoặc itemsPerPage được truyền từ FE, gán giá trị mặc định
-    if (!page) page = DEFAULT_PAGE
-    if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
-
-    const results = await boardModel.getBoards(userId, parseInt(page, 10), parseInt(itemsPerPage, 10))
-    return results
-  } catch (error) {throw error}
-}
-export const bookService = {
+const bookService = {
   createNew,
   getDetails,
-  update,
-  moveCardToDifferentColumn,
-  getBoards
+  deleteBook,
+  getAllBooks,
+  updateBook,
+  // moveCardToDifferentColumn,
+  // getBoards
 
 }
+
+export { bookService }

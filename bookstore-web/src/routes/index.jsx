@@ -29,7 +29,7 @@ const AppRoutes = () => {
       {/* Protected User Routes */}
       <Route element={<ProtectedRoute user={currentUser} />}>
         <Route path="bookstore" element={<UserRoutes />} />
-        <Route path="detail/:id" element={<UserRoutes />} />
+        <Route path="book-detail/:id" element={<UserRoutes />} />
         <Route path="cart" element={<UserRoutes />} />
         <Route path="checkout" element={<UserRoutes />} />
         <Route path="order-success" element={<UserRoutes />} />

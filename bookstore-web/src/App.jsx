@@ -22,7 +22,7 @@ import DashBoard from '~/pages/AdminPage/Dashboard'
 import Books from '~/pages/AdminPage/Books'
 import Orders from '~/pages/AdminPage/Orders'
 import Users from '~/pages/AdminPage/Users'
-import Analytics from '~/pages/AdminPage/Users'
+import Analytics from '~/pages/AdminPage/Analytics'
 
 import AdminLayout from '~/components/Layout/AdminLayout'
 // Giải pháp clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập vào board
@@ -54,7 +54,7 @@ function App() {
 
       {/* Public Routes */}
       <Route path="/bookstore" element={<BookStore />} />
-      <Route path="/detail/:id" element={<BookDetail />} />
+      <Route path="/book-detail/:id" element={<BookDetail />} />
       {/* Authentication route */}
       <Route path="/login" element={<Auth />} />
       <Route path="/register" element={<Auth />} />
@@ -78,7 +78,7 @@ function App() {
         <Route path="books" element={<Books />} />
         <Route path="orders" element={<Orders />} />
         <Route path="users" element={<Users />} />
-        <Route path="analytics" element={<Users />} />
+        <Route path="analytics" element={<Analytics />} />
 
       </Route>
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import AppBar from "~/components/AppBar/AppBar"
 import PageLoadingSpinner from "~/components/Loading/PageLoadingSpinner"
@@ -25,12 +24,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { styled } from "@mui/material/styles"
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import VisibilityIcon from "@mui/icons-material/Visibility"
-
+import {DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE} from '~/utils/constants'
 import Footer from "~/components/Footer/Footer"
 
-import { DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from "~/utils/constants"
-import { mockBooks, mockCategories } from "~/apis/mockData"
-
+// import { mockBooks, mockCategories } from "~/apis/mockData"
+import { fetchBooksAPI } from '~/apis/index'
 const SidebarItem = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
@@ -73,15 +71,8 @@ function BookStore() {
   }
 
   useEffect(() => {
-    // Mock API call - thay thế bằng API thực tế
-    setTimeout(() => {
-      const filteredBooks =
-        selectedCategory === "all" ? mockBooks : mockBooks.filter((book) => book.category === selectedCategory)
 
-      setBooks(filteredBooks)
-      setTotalBooks(filteredBooks.length)
-      setCategories(mockCategories)
-    }, 500)
+    fetchBooksAPI(location.search).then(updateStateData)
   }, [location.search, selectedCategory])
 
   const formatPrice = (price) => {
@@ -172,20 +163,22 @@ function BookStore() {
               </Box>
             )}
 
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               {books.map((book) => (
-                <Grid xs={12} sm={6} md={4} lg={3} key={book._id}>
+                <Grid item xs={12} sm={6} md={4} lg={3} xl={2.4} key={book._id}>
                   <Box
                     sx={{
-                      width: "100%", // Đảm bảo container có width 100%
+                      width: "100%",
                       height: "100%",
+                      display: "flex",
+                      justifyContent: "center",
                     }}
                   >
                     <Card
                       sx={{
-                        width: "100%", // Card chiếm 100% width của container
-                        height: 480,
-                        maxWidth: "100%", // Không cho phép vượt quá
+                        width: "100%",
+                        maxWidth: "380px",
+                        height: 400,
                         display: "flex",
                         flexDirection: "column",
                         transition: "transform 0.2s, box-shadow 0.2s",
@@ -198,7 +191,7 @@ function BookStore() {
                       {/* Ảnh sách - chiều cao cố định */}
                       <CardMedia
                         component="img"
-                        height="180"
+                        height="190"
                         image={book.image}
                         alt={book.title}
                         sx={{
@@ -212,21 +205,21 @@ function BookStore() {
                       <CardContent
                         sx={{
                           flexGrow: 1,
-                          p: 2,
+                          p: 1,
                           display: "flex",
                           flexDirection: "column",
-                          height: "calc(100% - 180px - 60px)",
+                          height: "calc(100% - 160px - 48px)",
                           overflow: "hidden",
-                          width: "100%", // Đảm bảo content chiếm 100% width
-                          boxSizing: "border-box", // Bao gồm padding trong width
+                          width: "100%",
+                          boxSizing: "border-box",
                         }}
                       >
-                        {/* Tiêu đề sách - 2 dòng cố định */}
+                        {/* Tiêu đề sách */}
                         <Typography
                           variant="h6"
                           component="div"
                           sx={{
-                            fontSize: "0.95rem",
+                            fontSize: "0.9rem",
                             fontWeight: "bold",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -235,14 +228,14 @@ function BookStore() {
                             WebkitBoxOrient: "vertical",
                             height: "2.4em",
                             lineHeight: "1.2em",
-                            mb: 1,
-                            wordBreak: "break-word", // Ngắt từ nếu quá dài
+                            mb: 0.25,
+                            wordBreak: "break-word",
                           }}
                         >
                           {book.title}
                         </Typography>
 
-                        {/* Tác giả - 1 dòng cố định */}
+                        {/* Tác giả */}
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -251,22 +244,15 @@ function BookStore() {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
-                            mb: 1,
-                            width: "100%",
+                            mb: 1.25,
+                            // width: "100%",
+                            fontSize: "0.8rem",
                           }}
                         >
                           {book.author}
                         </Typography>
 
-                        {/* Rating - chiều cao cố định */}
-                        <Box sx={{ display: "flex", alignItems: "center", mb: 1, height: "20px", width: "100%" }}>
-                          <Rating value={book.rating} precision={0.1} size="small" readOnly />
-                          <Typography variant="body2" sx={{ ml: 1, fontSize: "0.75rem" }}>
-                            ({book.reviewCount})
-                          </Typography>
-                        </Box>
-
-                        {/* Mô tả - 2 dòng cố định */}
+                        {/* Mô tả */}
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -274,28 +260,29 @@ function BookStore() {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             display: "-webkit-box",
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: 1,
                             WebkitBoxOrient: "vertical",
-                            height: "2.4em",
+                            height: "1.2em",
                             lineHeight: "1.2em",
-                            mb: 2,
-                            fontSize: "0.8rem",
+                            mb: 0.5,
+                            fontSize: "0.75rem",
                             wordBreak: "break-word",
                             width: "100%",
                           }}
                         >
-                          {book.subtitle && book.subtitle.length > 80
-                            ? `${book.subtitle.substring(0, 80)}...`
+                          {book.subtitle && book.subtitle.length > 60
+                            ? `${book.subtitle.substring(0, 60)}...`
                             : book.subtitle || "Mô tả sách sẽ được cập nhật"}
                         </Typography>
 
                         {/* Spacer để đẩy phần giá xuống dưới */}
-                        <Box sx={{ flexGrow: 1 }} />
+                        <Box sx={{ flexGrow: 0.5 }} />
 
-                        {/* Phần giá - cố định ở cuối */}
+                        {/* Phần giá */}
                         <Box sx={{ width: "100%" }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, minHeight: "24px" }}>
-                            <Typography variant="h6" color="primary" fontWeight="bold" sx={{ fontSize: "1rem" }}>
+                          {/* Giá và giá gốc */}
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mb: 0, minHeight: "24px" }}>
+                            <Typography variant="h6" color="primary" fontWeight="bold" sx={{ fontSize: "0.9rem" }}>
                               {formatPrice(book.price)}
                             </Typography>
                             {book.originalPrice > book.price && (
@@ -304,7 +291,7 @@ function BookStore() {
                                 sx={{
                                   textDecoration: "line-through",
                                   color: "text.secondary",
-                                  fontSize: "0.75rem",
+                                  fontSize: "0.7rem",
                                 }}
                               >
                                 {formatPrice(book.originalPrice)}
@@ -313,7 +300,7 @@ function BookStore() {
                           </Box>
 
                           {/* Chip trạng thái */}
-                          <Box sx={{ minHeight: "24px" }}>
+                          <Box sx={{ minHeight: "16px" }}>
                             {!book.inStock && <Chip label="Hết hàng" color="error" size="small" />}
                           </Box>
                         </Box>
@@ -322,12 +309,12 @@ function BookStore() {
                       {/* Actions - chiều cao cố định */}
                       <CardActions
                         sx={{
-                          p: 2,
+                          p: 1,
                           pt: 0,
                           display: "flex",
-                          gap: 1,
+                          gap: 0.5,
                           flexShrink: 0,
-                          height: "60px",
+                          height: "48px",
                           alignItems: "center",
                           width: "100%",
                           boxSizing: "border-box",
@@ -337,13 +324,13 @@ function BookStore() {
                           size="small"
                           variant="outlined"
                           startIcon={<VisibilityIcon />}
-                          onClick={() => navigate(`/detail/${book._id}`)}
+                          onClick={() => navigate(`/book-detail/${book._id}`)}
                           sx={{
                             flex: 1,
-                            height: "36px",
+                            height: "32px",
                             fontSize: "0.7rem",
                             whiteSpace: "nowrap",
-                            minWidth: 0, // Cho phép button co lại
+                            minWidth: 0,
                           }}
                         >
                           Xem chi tiết
@@ -355,10 +342,10 @@ function BookStore() {
                           disabled={!book.inStock}
                           sx={{
                             flex: 1,
-                            height: "36px",
+                            height: "32px",
                             fontSize: "0.7rem",
                             whiteSpace: "nowrap",
-                            minWidth: 0, // Cho phép button co lại
+                            minWidth: 0,
                           }}
                         >
                           {book.inStock ? "Thêm vào giỏ" : "Hết hàng"}
@@ -390,7 +377,7 @@ function BookStore() {
                   renderItem={(item) => (
                     <PaginationItem
                       component={Link}
-                      to={`/bookstore${item.page === DEFAULT_PAGE ? "" : `?page=${item.page}`}`}
+                      to={`/bookstore${item.page === DEFAULT_PAGE ? '' : `?page=${item.page}`}`}
                       {...item}
                     />
                   )}

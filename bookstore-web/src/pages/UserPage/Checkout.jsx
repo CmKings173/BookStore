@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AppBar from "~/components/AppBar/AppBar"
@@ -39,6 +38,7 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance"
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline"
 import SecurityIcon from "@mui/icons-material/Security"
 
+import { useTheme } from "@mui/material/styles"
 const steps = ["Giỏ hàng", "Thông tin giao hàng", "Phương thức thanh toán", "Xác nhận đơn hàng"]
 
 function CheckoutPage() {
@@ -527,7 +527,7 @@ function CheckoutPage() {
                     Thực hiện thanh toán vào ngay tài khoản ngân hàng của chúng tôi. Vui lòng sử dụng Mã đơn hàng của
                     bạn trong phần Nội dung thanh toán. Đơn hàng sẽ được giao sau khi tiền đã chuyển.
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: "#f9f9f9", borderRadius: "4px" }}>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: theme => theme.palette.background.paper, borderRadius: "4px" }}>
                     <Typography variant="body2">
                       <strong>Ngân hàng:</strong> Vietinbank
                     </Typography>
@@ -545,38 +545,6 @@ function CheckoutPage() {
               )}
             </Paper>
 
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                borderRadius: "8px",
-                borderColor: paymentMethod === "momo" ? "#4caf50" : "divider",
-                backgroundColor: paymentMethod === "momo" ? "rgba(76, 175, 80, 0.04)" : "transparent",
-              }}
-            >
-              <FormControlLabel
-                value="momo"
-                control={<Radio color="primary" />}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box
-                      component="img"
-                      src="/placeholder.svg?height=24&width=24"
-                      alt="MoMo"
-                      sx={{ mr: 1, width: 24, height: 24 }}
-                    />
-                    <Typography variant="body1" fontWeight="500">
-                      Thanh toán qua Ví MoMo
-                    </Typography>
-                  </Box>
-                }
-              />
-              {paymentMethod === "momo" && (
-                <Typography variant="body2" sx={{ ml: 4, mt: 1, color: "text.secondary" }}>
-                  Bạn sẽ được chuyển đến trang thanh toán MoMo để hoàn tất giao dịch.
-                </Typography>
-              )}
-            </Paper>
           </RadioGroup>
         </FormControl>
       </Paper>

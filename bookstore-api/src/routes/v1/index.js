@@ -1,8 +1,10 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { boardRoute } from './boardRoute'
-import { columnRoute } from '~/routes/v1/columnRoute'
-import { cardRoute } from '~/routes/v1/cardRoute'
+import { bookRoute } from '~/routes/v1/bookRoute'
+import { categoryRoute } from '~/routes/v1/categoryRoute'
+
+// import { columnRoute } from '~/routes/v1/columnRoute'
+// import { orderRoute } from '~/routes/v1/orderRoute'
 import { userRoute } from '~/routes/v1/userRoute'
 
 const Router = express.Router()
@@ -13,13 +15,13 @@ Router.get('/status', (req, res) => {
 })
 
 // Board APIs
-Router.use('/boards', boardRoute)
+Router.use('/books', bookRoute)
 
-// Columns APIs
-Router.use('/columns', columnRoute)
+// Categories APIs
+Router.use('/categories', categoryRoute)
 
 // Cards APIs
-Router.use('/cards', cardRoute)
+// Router.use('/orders', orderRoute)
 
 // user APIs
 Router.use('/users', userRoute)

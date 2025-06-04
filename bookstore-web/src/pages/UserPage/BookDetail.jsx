@@ -34,8 +34,8 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping"
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser"
 import CachedIcon from "@mui/icons-material/Cached"
 
-import  { mockBooks, mockCategories } from '~/apis/mockData'
-
+// import  { mockBooks, mockCategories } from '~/apis/mockData'
+import {fetchBooksDetailAPI} from '~/apis/client'
 function TabPanel(props) {
   const { children, value, index, ...other } = props
 
@@ -53,34 +53,36 @@ function TabPanel(props) {
 }
 
 function BookDetail() {
-  const { id } = useParams() 
-  console.log(id)// Lấy id từ URL
+  const { id } = useParams()
+  console.log('id: ',id)
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [tabValue, setTabValue] = useState(0)
   const [book, setBook] = useState(null)
 
-
-  
   useEffect(() => {
-    setLoading(true)
-    console.log('Current ID from URL:', id)
-    console.log('Available books:', mockBooks)
-    const foundBook = mockBooks.find(book => book._id === id)
-    console.log('Found book:', foundBook)
-    if (foundBook) {
-      // Tìm category tương ứng
-      const category = mockCategories.find(cat => cat._id === foundBook.categoryId)
-      console.log('Found category:', category)
-      // Thêm thông tin category vào book
-      const bookWithCategory = {
-        ...foundBook,
-        category: category ? category.name : 'Không phân loại'
+    const fetchBookDetails = async () => {
+      if (!id) {
+        setLoading(false)
+        setBook(null)
+        return
       }
-      setBook(bookWithCategory)
+      setLoading(true)
+
+      try {
+        const bookData = await fetchBooksDetailAPI(id)
+        console.log('bookData:', bookData)
+        setBook(bookData)
+      } catch (error) {
+        console.error("Lỗi khi lấy chi tiết sách:", error)
+        setBook(null)
+      } finally {
+        setLoading(false)
+      }
     }
-    setLoading(false)
+
+    fetchBookDetails()
   }, [id])
 
   const formatPrice = (price) => {
@@ -89,7 +91,7 @@ function BookDetail() {
 
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change
-    if (newQuantity >= 1 && newQuantity <= (book?.stockQuantity || 1)) {
+    if (newQuantity >= 1 && newQuantity <= (book?.stock || 1)) {
       setQuantity(newQuantity)
     }
   }
@@ -140,9 +142,9 @@ function BookDetail() {
           <Link underline="hover" color="inherit" href="/bookstore">
             Cửa hàng sách
           </Link>
-          <Link underline="hover" color="inherit" href={`/bookstore?category=${book.category}`}>
+          {/* <Link underline="hover" color="inherit" href={`/bookstore?category=${book.category}`}>
             {book.category}
-          </Link>
+          </Link> */}
           <Typography color="text.primary">{book.title}</Typography>
         </Breadcrumbs>
 
@@ -278,7 +280,7 @@ function BookDetail() {
               </Typography>
               {/* Category chip */}
               <Chip
-                label={book.category}
+                label={book.categoryName}
                 size="small"
                 sx={{
                   mb: 2,
@@ -341,11 +343,6 @@ function BookDetail() {
                 </Typography>
               </Box>
 
-              {/* Description */}
-              <Typography variant="body1" paragraph sx={{ mb: 3, lineHeight: 1.7 }}>
-                {book.description}
-              </Typography>
-
               <Divider sx={{ my: 3 }} />
 
               {/* Quantity selector */}
@@ -394,7 +391,7 @@ function BookDetail() {
                     variant="text"
                     size="small"
                     onClick={() => handleQuantityChange(1)}
-                    disabled={quantity >= book.stockQuantity}
+                    disabled={quantity >= book?.stock}
                     sx={{
                       minWidth: "40px",
                       height: "40px",
@@ -424,7 +421,7 @@ function BookDetail() {
                           mr: 1,
                         }}
                       ></Box>
-                      Còn hàng ({book.stockQuantity} sản phẩm)
+                      Còn hàng ({book.stock} sản phẩm)
                     </Typography>
                   ) : (
                     <Typography
@@ -588,14 +585,10 @@ function BookDetail() {
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ fontWeight: "500" }}>Trọng lượng</TableCell>
-                      <TableCell>{book.weight}</TableCell>
+                      <TableCell>{book.weight}g</TableCell>
                     </TableRow>
                     <TableRow sx={{ "&:nth-of-type(odd)": { backgroundColor: (theme) => theme.palette.action.hover } }}>
-                      <TableCell sx={{ fontWeight: "500" }} >ISBN</TableCell>
-                      <TableCell>{book.isbn}</TableCell>
-                    </TableRow>
-                    <TableRow >
-                      <TableCell sx={{ fontWeight: "500" }}>Định dạng</TableCell>
+                      <TableCell sx={{ fontWeight: "500" }} >Định dạng</TableCell>
                       <TableCell>{book.format}</TableCell>
                     </TableRow>
                   </TableBody>
