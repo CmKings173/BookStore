@@ -27,6 +27,8 @@ import { APIProvider } from "@vis.gl/react-google-maps"
 import { injectStore } from '~/utils/authorizedAxios'
 injectStore(store)
 
+import { CategoryProvider } from './contexts/CategoryContext'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter basename='/'>
     <Provider store={store}>
@@ -41,7 +43,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           }}>
             <GlobalStyles styles={{ a: { textDecoration: 'none' } }} />
             <CssBaseline />
-            <App />
+            <CategoryProvider>
+              <App />
+            </CategoryProvider>
             
             <ToastContainer position="bottom-left" theme="colored" />
           </ConfirmProvider>

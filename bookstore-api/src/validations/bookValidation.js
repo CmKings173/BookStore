@@ -66,48 +66,20 @@ const createNew = async (req, res, next) => {
 
 const updateBook = async (req, res, next) => {
   const correctCondition = Joi.object({
-    title: Joi.string().required().min(3).max(100).trim().strict().messages({
-      'any.required': 'Title is required',
-      'string.empty': 'Title cannot be empty',
-      'string.min': 'Title must be at least 3 characters long',
-      'string.max': 'Title must be less than or equal to 100 characters long'
-    }),
-    author: Joi.string().required().min(3).max(100).trim().strict().messages({
-      'any.required': 'Author is required',
-      'string.empty': 'Author cannot be empty'
-    }),
-    subtitle: Joi.string().optional().max(255).trim().strict(),
-    description: Joi.string().optional().max(5000).trim().strict(),
-    price: Joi.number().required().min(0).messages({
-      'any.required': 'Price is required',
-      'number.base': 'Price must be a number',
-      'number.min': 'Price must be greater than or equal to 0'
-    }),
-    // categoryId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
-    stock: Joi.number().required().min(0).messages({
-      'any.required': 'Stock is required',
-      'number.base': 'Stock must be a number',
-      'number.min': 'Stock must be at least 0'
-    }),
-    publisher: Joi.string().required().min(2).max(100).trim().strict().messages({
-      'any.required': 'Publisher is required'
-    }),
-    publishYear: Joi.string()
-      .pattern(/^\d{4}$/)
-      .required()
-      .messages({
-        'any.required': 'Publish year is required',
-        'string.pattern.base': 'Publish year must be a 4-digit number'
-      }),
-    pages: Joi.number().required().min(1).messages({
-      'any.required': 'Pages are required',
-      'number.base': 'Pages must be a number',
-      'number.min': 'Pages must be at least 1'
-    }),
+    title: Joi.string().min(3).max(100).trim().strict(),
+    author: Joi.string().min(3).max(100).trim().strict(),
+    subtitle: Joi.string().max(255).trim().strict(),
+    description: Joi.string().max(5000).trim().strict(),
+    price: Joi.number().min(0),
+    categoryId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+    stock: Joi.number().min(0),
+    publisher: Joi.string().min(2).max(100).trim().strict(),
+    publishYear: Joi.string().pattern(/^\d{4}$/),
+    pages: Joi.number().min(1),
     format: Joi.string().optional(),
     dimensions:Joi.string().optional().trim().strict(),
     weight:Joi.number().optional().min(1),
-    inStock: Joi.boolean().required().default(false)
+    inStock: Joi.boolean().default(false)
   })
   try {
     await correctCondition.validateAsync(req.body, {

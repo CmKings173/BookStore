@@ -8,12 +8,10 @@ import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 
 import Settings from '~/pages/Settings/Settings'
-import BookStore from '~/pages/UserPage/HomePage'
-
+import HomePage from '~/pages/UserPage/HomePage'
 import Cart from '~/pages/UserPage/Cart'
 import BookDetail from '~/pages/UserPage/BookDetail'
 import Checkout from '~/pages/UserPage/Checkout'
-
 import OrderSuccessPage from '~/pages/UserPage/OrderSuccess'
 import OrderHistory from '~/pages/UserPage/Order'
 import OrderDetail from '~/pages/UserPage/OrderDetail'
@@ -50,10 +48,10 @@ function App() {
   return (
     <Routes>
       {/* Redirect Route */}
-      <Route path="/" element={<Navigate to="/bookstore" replace={true} />} />
+      <Route path="/" element={<Navigate to="/home" replace={true} />} />
 
       {/* Public Routes */}
-      <Route path="/bookstore" element={<BookStore />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/book-detail/:id" element={<BookDetail />} />
       {/* Authentication route */}
       <Route path="/login" element={<Auth />} />

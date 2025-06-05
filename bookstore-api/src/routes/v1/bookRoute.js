@@ -11,7 +11,7 @@ Router.route('/')
 
 Router.route('/:id')
   .get( bookController.getDetails)
-  // .put(bookValidation.updateBook, bookController.updateBook ) //update
+  .put(bookValidation.updateBook, bookController.updateBook )
   .delete(bookValidation.deleteBook, bookController.deleteBook)
 
 export const bookRoute = Router

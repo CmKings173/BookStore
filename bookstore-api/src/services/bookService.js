@@ -73,13 +73,13 @@ const getAllBooks = async (page, itemsPerPage) => {
   } catch (error) { throw error }
 }
 
-const updateBook = async (bookId, categoryId, reqBody) => {
+const updateBook = async (bookId, reqBody) => {
   try {
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()
     }
-    const updatedBook = await bookModel.update(bookId, categoryId, updateData)
+    const updatedBook = await bookModel.updateBook(bookId, updateData)
 
     return updatedBook
   } catch (error) { throw new Error(error)}
@@ -90,7 +90,7 @@ const bookService = {
   getDetails,
   deleteBook,
   getAllBooks,
-  updateBook,
+  updateBook
   // moveCardToDifferentColumn,
   // getBoards
 

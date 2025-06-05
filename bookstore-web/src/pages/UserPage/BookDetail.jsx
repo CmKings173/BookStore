@@ -139,7 +139,7 @@ function BookDetail() {
           <Link underline="hover" color="inherit" href="/">
             Trang chủ
           </Link>
-          <Link underline="hover" color="inherit" href="/bookstore">
+          <Link underline="hover" color="inherit" href="/home">
             Cửa hàng sách
           </Link>
           {/* <Link underline="hover" color="inherit" href={`/bookstore?category=${book.category}`}>

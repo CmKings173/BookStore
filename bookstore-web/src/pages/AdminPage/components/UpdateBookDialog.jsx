@@ -16,30 +16,58 @@ import {
   Divider
 } from "@mui/material"
 import { useEffect, useState } from "react"
-import { createNewBookAPI} from '~/apis/admin/index'
+import { updateBookAPI } from '~/apis/admin/index'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 import { useCategories } from '~/contexts/CategoryContext'
 
-const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
+const UpdateBookDialog = ({ open, onClose, bookData, afterCreateNewOrUpdate }) => {
   const [loading, setLoading] = useState(false)
   const { control, register, handleSubmit, reset, formState: { errors } } = useForm()
   const { categories, loading: categoriesLoading } = useCategories()
 
+  useEffect(() => {
+    if (open && bookData) {
+      console.log('Book Data:', bookData); // Debug log
+      reset({
+        title: bookData.title || '',
+        subtitle: bookData.subtitle || '',
+        author: bookData.author || '',
+        categoryId: bookData.categoryId || '',
+        publisher: bookData.publisher || '',
+        publishYear: bookData.publishYear || '',
+        pages: bookData.pages || '',
+        format: bookData.format || '',
+        dimensions: bookData.dimensions || '',
+        price: bookData.price || '',
+        stock: bookData.stock || '',
+        inStock: bookData.inStock ?? true,
+        description: bookData.description || '',
+        weight: bookData.weight || '',
+        image: bookData.image || ''
+      })
+    }
+  }, [open, bookData, reset])
+
   const handleCloseDialog = () => {
-    onClose()
-    reset() // Reset form khi đóng dialog
+    onClose(false)
+    reset()
   }
 
-  const submitCreateNewBook = async (data) => {
+  const submitUpdateBook = async (data) => {
     try {
       setLoading(true)
-      createNewBookAPI(data).then(()=>{
-        handleCloseDialog()
+      // console.log('Data to update:', data) // Debug log 
+      const response = await updateBookAPI(bookData._id, data)
+      if (response) {
+        toast.success('Cập nhật sách thành công')
         afterCreateNewOrUpdate()
-      })
+        handleCloseDialog()
+        onClose(true)
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi thêm sách!')
+      console.error('Update error:', error) // Debug log
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật sách!')
     } finally {
       setLoading(false)
     }
@@ -66,13 +94,13 @@ const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
           fontSize: "1.25rem",
         }}
       >
-        📚 Thêm sách mới
+        📚 Cập nhật sách
       </DialogTitle>
       <DialogContent sx={{ p: 3 }}>
         <DialogContentText sx={{ mb: 3, color: "#6b7280" }}>
-          Nhập thông tin chi tiết của cuốn sách mới vào form bên dưới.
+          Cập nhật thông tin chi tiết của cuốn sách vào form bên dưới.
         </DialogContentText>
-        <Box component="form" onSubmit={handleSubmit(submitCreateNewBook)} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <Box component="form" onSubmit={handleSubmit(submitUpdateBook)} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Thông tin cơ bản */}
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
@@ -168,6 +196,7 @@ const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
                   variant="outlined"
                   error={!!errors.publisher}
                   helperText={errors.publisher?.message}
+                  defaultValue={bookData?.publisher || ''}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "12px",
@@ -190,6 +219,7 @@ const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
                   variant="outlined"
                   error={!!errors.publishYear}
                   helperText={errors.publishYear?.message}
+                  defaultValue={bookData?.publishYear || ''}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "12px",
@@ -397,7 +427,7 @@ const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
           Hủy
         </Button>
         <Button
-          onClick={handleSubmit(submitCreateNewBook)}
+          onClick={handleSubmit(submitUpdateBook)}
           className='.interceptor-loading'
           variant="contained"
           disabled={loading}
@@ -413,11 +443,11 @@ const AddBookDialog = ({ open, onClose, afterCreateNewOrUpdate }) => {
             },
           }}
         >
-          {loading ? 'Đang thêm...' : 'Thêm sách'}
+          {loading ? 'Đang cập nhật...' : 'Cập nhật sách'}
         </Button>
       </DialogActions>
     </Dialog>
   )
 }
 
-export default AddBookDialog
+export default UpdateBookDialog

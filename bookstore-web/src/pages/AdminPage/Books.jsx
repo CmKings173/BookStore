@@ -27,6 +27,7 @@ import {
   Zoom,
   Pagination,
   PaginationItem,
+
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
 import AddIcon from "@mui/icons-material/Add"
@@ -39,8 +40,11 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp"
 import FilterListIcon from "@mui/icons-material/FilterList"
 import { Link, useLocation } from "react-router-dom"
 import { fetchBooksAPI, fetchCategoriesAPI } from '~/apis/index'
-import { createNewBook } from '~/apis/admin/index'
+import { deleteBookAPI } from '~/apis/admin/index'
 import AddBookDialog from './components/AddBookDialog'
+import DeleteBookDialog from './components/DeleteBookDialog'
+import { toast } from 'react-toastify'
+import UpdateBookDialog from './components/UpdateBookDialog'
 
 // Styled Components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -137,6 +141,10 @@ function Books() {
     weight:"",
     inStock: ""
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [bookToDelete, setBookToDelete] = useState(null)
+  const [openUpdateDialog, setOpenUpdateDialog] = useState(false)
+  const [selectedBook, setSelectedBook] = useState(null)
 
   const handleClickOpen = () => {
     setOpen(true)
@@ -176,6 +184,42 @@ function Books() {
     setOpen(false)
   }
 
+  const handleDeleteClick = (book) => {
+    setBookToDelete(book)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteBookAPI(bookToDelete._id)
+      toast.success('Xóa sách thành công!')
+      setDeleteDialogOpen(false)
+      setBookToDelete(null)
+      // Fetch lại danh sách sách
+      fetchBooksAPI(location.search).then(updateStateData)
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi xóa sách!')
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setBookToDelete(null)
+  }
+
+  const handleUpdateClick = (book) => {
+    setSelectedBook(book)
+    setOpenUpdateDialog(true)
+  }
+
+  const handleUpdateClose = (success) => {
+    setOpenUpdateDialog(false)
+    if (success) {
+      fetchBooksAPI(location.search).then(updateStateData)
+    }
+    setSelectedBook(null)
+  }
+
   const filteredBooks = books.filter((book) => {
     const matchesSearch =
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -192,20 +236,18 @@ function Books() {
   const page = parseInt(query.get('page') || '1', 10)
 
   useEffect(() => {
-
     // setPage(currentPage)
-    fetchBooksAPI(location.search).then((res) => {
-      console.log("API Response: ", res)
-      updateStateData(res)
-    })
+    fetchBooksAPI(location.search).then(updateStateData)
   }, [location.search])
 
-  // useEffect(()=>}{})
+    const afterCreateNewOrUpdate = () => {
+      fetchBooksAPI(location.search).then(updateStateData)
+    }
 
   const inStockBooks = books?.filter((book) => book.inStock === true ).length || 0
   const totalValue = books?.reduce((sum, book) => sum + book.price * book.stock, 0) || 0
-
   const categories = [...new Set(books.map((book) => book.categoryName))]
+
   if (!books) {
     return <PageLoadingSpinner caption="Đang tải sách..." />
   }
@@ -402,14 +444,14 @@ function Books() {
             <TableBody>
               {books?.map((book, index) => (
                 <Fade in timeout={300 + index * 100} key={book.id}>
-                  <TableRow>
+                  <TableRow >
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <Avatar src={book.image} variant="rounded" sx={{ width: 45, height: 60, bgcolor: "#f0f0f0" }}>
                           📖
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: "600", color: "#2d3748" }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: "600", color: theme => theme.palette.mode === 'dark'? '#fff':"#2d3748" }}>
                             {book.title}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -419,13 +461,13 @@ function Books() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#4a5568" }}>
+                      <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark'? '#fff':"#2d3748" }}>
                         {book.author}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={typeof book.categoryId === 'object' ? book.categoryName : book.categoryId}
+                        label={book.category.name}
                         size="small"
                         sx={{
                           backgroundColor: "#e6fffa",
@@ -462,12 +504,16 @@ function Books() {
                     <TableCell align="right">
                       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
                         <Tooltip title="Chỉnh sửa" arrow>
-                          <ActionButton color="edit" size="small">
+                          <ActionButton color="edit" size="small" onClick={() => handleUpdateClick(book)}>
                             <EditIcon fontSize="small" sx={{ color: "#3b82f6" }} />
                           </ActionButton>
                         </Tooltip>
-                        <Tooltip title="Xóa" arrow>
-                          <ActionButton color="delete" size="small">
+                        <Tooltip title="Xóa sách" arrow>
+                          <ActionButton 
+                            color="delete" 
+                            size="small"
+                            onClick={() => handleDeleteClick(book)}
+                          >
                             <DeleteIcon fontSize="small" sx={{ color: "#ef4444" }} />
                           </ActionButton>
                         </Tooltip>
@@ -516,7 +562,21 @@ function Books() {
         onClose={handleClose}
         formData={formData}
         handleChange={handleChange}
-        handleSubmit={handleSubmit}
+        afterCreateNewOrUpdate={afterCreateNewOrUpdate}
+      />
+
+      <DeleteBookDialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        book={bookToDelete}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      <UpdateBookDialog
+        open={openUpdateDialog}
+        onClose={handleUpdateClose}
+        bookData={selectedBook}
+        afterCreateNewOrUpdate={afterCreateNewOrUpdate}
       />
     </Box>
   )

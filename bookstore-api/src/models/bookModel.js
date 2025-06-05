@@ -4,7 +4,7 @@ import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { pagingSkipValue } from '~/utils/algorithms'
-import {categoryModel} from '~/models/categoryModel'
+import { categoryModel } from '~/models/categoryModel'
 // Define collection (Name & Schema)
 const BOOK_COLLECTION_NAME = 'books'
 const BOOK_COLLECTION_SCHEMA = Joi.object({
@@ -37,10 +37,10 @@ const validateBeforeCreate = async (data) => {
   return await BOOK_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-// Tạo mới board
+// Tạo mới book
 const createNew = async (data) => {
   try {
-    // Validate data một lần nữa trước khi tạo bảng
+    // Validate data một lần nữa trước khi tạo book
     const validData = await validateBeforeCreate(data)
     // const newBookToAdd = {
     //   ...validData,
@@ -99,6 +99,13 @@ const getAllBooks = async (page, itemsPerPage) => {
         slug: 1,
         author: 1,
         subtitle: 1,
+        publisher:1,
+        publishYear:1,
+        pages:1,
+        format:1,
+        dimensions:1,
+        description:1,
+        weight:1,
         price: 1,
         stock: 1,
         image:1,
@@ -134,7 +141,33 @@ const getAllBooks = async (page, itemsPerPage) => {
     }
 
   } catch (error) {
-    console.error('Error in getAllBooks:', error)
+    // console.error('Error in getAllBooks:', error)
+    throw new Error(error)
+  }
+}
+
+const updateBook = async (bookId, updateData) => {
+  try {
+    // Lọc ra các field không được update
+    Object.keys(updateData).forEach((fieldName) => {
+      if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
+        delete updateData[fieldName]
+      }
+    })
+    // Convert từ string sang ObjectId
+    if (updateData.categoryId) {
+      updateData.categoryId = new ObjectId(updateData.categoryId)
+    }
+
+    const result = await GET_DB()
+      .collection(BOOK_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(bookId) },
+        { $set: updateData },
+        { returnDocument: 'after', upsert: false }
+      )
+    return result
+  } catch (error) {
     throw new Error(error)
   }
 }
@@ -145,7 +178,6 @@ export const bookModel = {
   createNew,
   findOneById,
   deleteBook,
-  getAllBooks
-  // getDetails,
-//   update,
+  getAllBooks,
+  updateBook
 }

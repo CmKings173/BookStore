@@ -17,7 +17,6 @@ import CardMedia from "@mui/material/CardMedia"
 import CardActions from "@mui/material/CardActions"
 import Button from "@mui/material/Button"
 import Chip from "@mui/material/Chip"
-import Rating from "@mui/material/Rating"
 import Pagination from "@mui/material/Pagination"
 import PaginationItem from "@mui/material/PaginationItem"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -26,9 +25,10 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import VisibilityIcon from "@mui/icons-material/Visibility"
 import {DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE} from '~/utils/constants'
 import Footer from "~/components/Footer/Footer"
+import { fetchBooksAPI, fetchCategoriesAPI } from '~/apis/index'
 
 // import { mockBooks, mockCategories } from "~/apis/mockData"
-import { fetchBooksAPI } from '~/apis/index'
+
 const SidebarItem = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
@@ -46,7 +46,7 @@ const SidebarItem = styled(Box)(({ theme }) => ({
   },
 }))
 
-function BookStore() {
+function HomePage() {
   // Danh sách sách hiển thị trên trang
   const [books, setBooks] = useState(null)
 
@@ -65,14 +65,38 @@ function BookStore() {
   const page = Number.parseInt(query.get("page") || "1", 10)
   const navigate = useNavigate()
 
+  // const { cc } = useCategory()
+
   const updateStateData = (res) => {
+    // console.log('Updating state with:', res)
     setBooks(res.books || [])
     setTotalBooks(res.totalBooks || 0)
   }
 
   useEffect(() => {
+    // Fetch categories
+    fetchCategoriesAPI().then(res => {
+      // console.log('Categories response:', res)
+      // Kiểm tra cấu trúc response
+      if (res && res.data) {
+        setCategories(res.data)
+      } else if (res && Array.isArray(res)) {
+        setCategories(res)
+      } else {
+        console.error('Invalid categories data structure:', res)
+        setCategories([])
+      }
+    }).catch(err => {
+      console.error('Error fetching categories:', err)
+      setCategories([])
+    })
 
-    fetchBooksAPI(location.search).then(updateStateData)
+    // Fetch books
+    fetchBooksAPI(location.search).then(res => {
+      updateStateData(res)
+    }).catch(err => {
+      console.error('Error fetching books:', err)
+    })
   }, [location.search, selectedCategory])
 
   const formatPrice = (price) => {
@@ -86,6 +110,8 @@ function BookStore() {
     setSelectedCategory(categoryId)
   }
 
+  // console.log('Current state:', { books, categories, selectedCategory, totalBooks })
+
   if (!books) {
     return <PageLoadingSpinner caption="Đang tải sách..." />
   }
@@ -95,27 +121,23 @@ function BookStore() {
       <AppBar />
       <Box sx={{ paddingX: 2, my: 4 }}>
         <Grid container spacing={3}>
-          {/* Sidebar - Danh mục sách */}
+           {/* Sidebar - Danh mục sách */}
           <Grid item xs={12} sm={3}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2, color: "primary.main" }}>
               📚 Danh mục sách
             </Typography>
 
             <Stack direction="column" spacing={1}>
+              {/* {console.log('Rendering categories:', categories)} */}
               {categories.map((category) => (
                 <SidebarItem
-                  key={category.id}
-                  className={selectedCategory === category.id ? "active" : ""}
-                  onClick={() => handleCategoryChange(category.id)}
+                  key={category._id}
+                  className={selectedCategory === category._id ? "active" : ""}
+                  onClick={() => handleCategoryChange(category._id)}
                 >
                   <CategoryIcon fontSize="small" />
                   <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                     <Typography variant="body2">{category.name}</Typography>
-                    <Chip
-                      label={category.count}
-                      size="small"
-                      color={selectedCategory === category.id ? "primary" : "default"}
-                    />
                   </Box>
                 </SidebarItem>
               ))}
@@ -143,12 +165,12 @@ function BookStore() {
               </SidebarItem>
             </Stack>
           </Grid>
-
-          {/* Main Content - Danh sách sách */}
+           
+          {/* Main Content - Danh sách book*/}
           <Grid xs={12} sm={9}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
               <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-                {selectedCategory === "all" ? "Tất cả sách" : categories.find((c) => c.id === selectedCategory)?.name}
+                {selectedCategory === "all" ? "Tất cả sách" : categories.find((c) => c._id === selectedCategory)?.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Tìm thấy {totalBooks} cuốn sách
@@ -392,4 +414,4 @@ function BookStore() {
   )
 }
 
-export default BookStore
+export default HomePage

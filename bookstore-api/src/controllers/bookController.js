@@ -3,7 +3,7 @@ import { bookService } from '~/services/bookService'
 
 const createNew = async (req, res, next) => {
   try {
-    console.log('req.body: ', req.body)
+    // console.log('req.body: ', req.body)
     // Điều hướng dữ liệu sang tầng Service
     const createdBook = await bookService.createNew(req.body)
     // throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'test error')
@@ -53,7 +53,7 @@ const updateBook = async (req, res, next) => {
     // console.log('req.params: ', req.params )
     const bookId = req.params.id
     // Điều hướng dữ liệu sang tầng Service
-    const updatedBook = await bookService.updateBook(bookId, req.body)
+    const updatedBook = await bookService.updateBook( bookId, req.body)
 
     // Có kết quả thì trả về phía client
     res.status(StatusCodes.OK).json(updatedBook)
@@ -62,12 +62,11 @@ const updateBook = async (req, res, next) => {
 }
 
 
-
 export const bookController = {
   createNew,
   getDetails,
   deleteBook,
-  getAllBooks
-  // update,
+  getAllBooks,
+  updateBook
 
 }
