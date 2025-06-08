@@ -465,8 +465,8 @@ const Customers = () => {
                   sx={{ borderRadius: "8px" }}
                 >
                   <MenuItem value="">Tất cả</MenuItem>
-                  <MenuItem value="Hoạt động">Hoạt động</MenuItem>
-                  <MenuItem value="Tạm khóa">Tạm khóa</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -639,17 +639,6 @@ const Customers = () => {
           </Table>
         </TableContainer>
         
-        {/* <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredUsers.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Số dòng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
-        /> */}
       </Card>
 
       {/* User Detail Dialog */}

@@ -1,6 +1,6 @@
 import express from 'express'
 // import { bookValidation } from '~/validations/bookValidation'
-import { cartController } from '~/controllers/bookController'
+import { cartController } from '~/controllers/cartController'
 import { authMiddleware } from '~/middlewares/authMiddleware'
 
 const Router = express.Router()

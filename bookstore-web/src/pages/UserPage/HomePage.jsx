@@ -78,7 +78,10 @@ function HomePage() {
       try {
         const query = new URLSearchParams(location.search)
         const categorySlug = query.get('category')
-        const searchQuery = query.get('search')
+const searchParam = query.get('search')
+setSearchQuery(searchParam || "")
+setSearchQuery(searchParam || "")
+setSearchQuery(searchParam || "")
         
         let categoryId = "all"
         if (categorySlug) {
@@ -457,3 +460,4 @@ function HomePage() {
 }
 
 export default HomePage
+

@@ -7,7 +7,7 @@ import {
   Button,
 } from "@mui/material"
 
-const DeleteBookDialog = ({ open, onClose, user, onConfirm }) => {
+const DeleteUserDialog = ({ open, onClose, user, onConfirm }) => {
   return (
     <Dialog
       open={open}
@@ -61,4 +61,4 @@ const DeleteBookDialog = ({ open, onClose, user, onConfirm }) => {
   )
 }
 
-export default DeleteBookDialog 
+export default DeleteUserDialog

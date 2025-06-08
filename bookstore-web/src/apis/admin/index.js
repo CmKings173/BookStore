@@ -4,9 +4,7 @@ import { toast } from 'react-toastify'
 
 export const createNewBookAPI = async (bookData) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/books`, bookData)
-  if(response){
-    toast.success("Thêm sách thành công")
-  }
+  toast.success("Thêm sách thành công")
   return response.data
 }
 export const updateBookAPI = async (bookId, data) => {
