@@ -6,13 +6,14 @@ import { authMiddleware } from '~/middlewares/authMiddleware'
 const Router = express.Router()
 
 Router.route('/create')
-  .post(categoryValidation.createNew, categoryController.createNew)
+  .post(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    categoryValidation.createNew,
+    categoryController.createNew
+  )
 
 Router.route('/')
   .get(categoryController.getCategories)
-
-// Router.route('/:id')
-//   .put(authMiddleware.isAuthorized, columnValidation.update, columnController.update )
-//   .delete(authMiddleware.isAuthorized, columnValidation.deleteItem, columnController.deleteItem)
 
 export const categoryRoute= Router

@@ -30,3 +30,9 @@ export const refreshTokenAPI = async () => {
   return response.data
 }
 
+// Tìm kiếm sách
+export const searchBooksAPI = async (query) => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/books/search${query}`)
+  return response.data
+}
+

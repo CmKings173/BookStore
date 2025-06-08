@@ -86,11 +86,37 @@ const update = async (req, res, next) => {
     res.status(StatusCodes.OK).json(updatedUser)
   } catch (error) { next(error)}
 }
+
+
+const getAllUsers = async (req, res, next) => {
+  try {
+    const { page, itemsPerPage } = req.query
+    const result = await userService.getAllUsers( page, itemsPerPage)
+
+    // Có kết quả thì trả về phía client
+    res.status(StatusCodes.OK).json(result)
+
+  } catch (error) {next(error)}
+}
+
+const deleteUser = async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    // Điều hướng dữ liệu sang tầng Service
+    const result = await userService.deleteUser(userId)
+    // Có kết quả thì trả về phía client
+    res.status(StatusCodes.OK).json(result)
+
+  } catch (error) {next(error)}
+}
+
 export const userController = {
   createNew,
   verifyAccount,
   login,
   logout,
   refreshToken,
-  update
+  update,
+  getAllUsers,
+  deleteUser
 }

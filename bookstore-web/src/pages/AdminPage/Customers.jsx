@@ -1,6 +1,7 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
+import { toast } from 'react-toastify'
+import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 import {
   Box,
   Typography,
@@ -49,65 +50,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert"
 import EmailIcon from "@mui/icons-material/Email"
 import PhoneIcon from "@mui/icons-material/Phone"
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
-import ShoppingBagIcon from "@mui/icons-material/ShoppingBag"
-
-const users = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    email: "nguyenvana@email.com",
-    phone: "0123456789",
-    role: "Khách hàng",
-    status: "Hoạt động",
-    joinDate: "15/01/2024",
-    orders: 5,
-    avatar: null,
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    email: "tranthib@email.com",
-    phone: "0987654321",
-    role: "Khách hàng",
-    status: "Hoạt động",
-    joinDate: "20/02/2024",
-    orders: 3,
-    avatar: null,
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    email: "levanc@email.com",
-    phone: "0369852147",
-    role: "Khách hàng",
-    status: "Tạm khóa",
-    joinDate: "10/03/2024",
-    orders: 1,
-    avatar: null,
-  },
-  {
-    id: 4,
-    name: "Phạm Thị D",
-    email: "phamthid@email.com",
-    phone: "0741852963",
-    role: "Admin",
-    status: "Hoạt động",
-    joinDate: "01/01/2024",
-    orders: 0,
-    avatar: null,
-  },
-  {
-    id: 5,
-    name: "Hoàng Văn E",
-    email: "hoangvane@email.com",
-    phone: "0258147369",
-    role: "Khách hàng",
-    status: "Hoạt động",
-    joinDate: "25/04/2024",
-    orders: 8,
-    avatar: null,
-  },
-]
+import { fetchUsersAPI, deleteUserAPI } from "~/apis/admin"
+import DeleteUserDialog from '~/pages/AdminPage/components/DeleteUserDialog'
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -122,9 +66,9 @@ const getStatusColor = (status) => {
 
 const getRoleColor = (role) => {
   switch (role) {
-    case "Admin":
+    case "admin":
       return "primary"
-    case "Khách hàng":
+    case "client":
       return "default"
     default:
       return "default"
@@ -133,9 +77,9 @@ const getRoleColor = (role) => {
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case "Hoạt động":
+    case true :
       return <CheckCircleIcon fontSize="small" />
-    case "Tạm khóa":
+    case false:
       return <BlockIcon fontSize="small" />
     default:
       return null
@@ -144,24 +88,72 @@ const getStatusIcon = (status) => {
 
 const getRoleIcon = (role) => {
   switch (role) {
-    case "Admin":
+    case "admin":
       return <AdminPanelSettingsIcon fontSize="small" />
-    case "Khách hàng":
+    case "client":
       return <PeopleIcon fontSize="small" />
     default:
       return null
   }
 }
 
-const Users = () => {
+const getAvatarColor = (name) => {
+  const colors = [
+    '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+    '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50',
+    '#8bc34a', '#cddc39', '#ffc107', '#ff9800', '#ff5722'
+  ]
+  // Tạo một số ngẫu nhiên dựa trên tên
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  // Lấy màu từ mảng colors
+  return colors[Math.abs(hash) % colors.length]
+}
+
+const Customers = () => {
   const theme = useTheme()
+  const location = useLocation()
+  const [users, setUsers] = useState([])
+  const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
-  const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  // Tính toán userStats từ users
+  const userStats = {
+    total: users.length,
+    active: users.filter(user => user.isActive).length,
+    blocked: users.filter(user => !user.isActive).length,
+    admins: users.filter(user => user.role === "admin").length,
+    customers: users.filter(user => user.role === "client").length,
+    // totalOrders: 0
+  }
+
+  const updateStateData = (res) => {
+    // console.log('Updating state with:', res)
+    setUsers(res.users || [])
+    setTotalUsers(res.totalUsers || 0)
+  }
+
+  const query = new URLSearchParams(location.search)
+  const currentPage = parseInt(query.get('page') || '1', 10)
+
+  useEffect(() => {
+    setPage(currentPage)
+    fetchUsersAPI(location.search).then(res => {
+      // console.log('API response:', res)
+      updateStateData(res)
+    }).catch(err => {
+      console.error('Error fetching users:', err)
+    })
+  }, [location.search])
 
   const handleRoleFilterChange = (event) => {
     setRoleFilter(event.target.value)
@@ -190,40 +182,44 @@ const Users = () => {
     setSelectedUser(null)
   }
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesRole = roleFilter === "" || user.role === roleFilter
-    const matchesStatus = statusFilter === "" || user.status === statusFilter
-
-    return matchesSearch && matchesRole && matchesStatus
-  })
-
-  // Tính toán thống kê người dùng
-  const userStats = {
-    total: users.length,
-    active: users.filter(user => user.status === "Hoạt động").length,
-    blocked: users.filter(user => user.status === "Tạm khóa").length,
-    admins: users.filter(user => user.role === "Admin").length,
-    customers: users.filter(user => user.role === "Khách hàng").length,
-    totalOrders: users.reduce((sum, user) => sum + user.orders, 0)
+  const handleDeleteClick = (book) => {
+    setUserToDelete(book)
+    setDeleteDialogOpen(true)
   }
 
-  const getAvatarColor = (name) => {
-    const colors = [
-      theme.palette.primary.main,
-      theme.palette.secondary.main,
-      theme.palette.error.main,
-      theme.palette.warning.main,
-      theme.palette.info.main,
-      theme.palette.success.main,
-    ]
-    const index = name.charCodeAt(0) % colors.length
-    return colors[index]
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteUserAPI(userToDelete._id)
+      toast.success('Xóa sách thành công!')
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
+      // Fetch lại danh sách sách
+      fetchUsersAPI(location.search).then(updateStateData)
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi xóa sách!')
+    }
   }
 
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setUserToDelete(null)
+  }
+  // const filteredUsers = users.filter((user) => {
+  //   const matchesSearch =
+  //     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+
+
+  //   const matchesRole = roleFilter === "" || user.role === roleFilter
+  //   const matchesStatus = statusFilter === "" || user.isActive === statusFilter
+
+  //   return matchesSearch && matchesRole && matchesStatus
+  // })
+
+  if (!users) {
+    return <PageLoadingSpinner caption="Đang tải ..." />
+  }
   return (
     <Box sx={{ flexGrow: 1, p: 3, bgcolor: "#f5f7fa" }}>
       {/* Header Section */}
@@ -248,7 +244,7 @@ const Users = () => {
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6}md={2.9}>
           <Card 
             elevation={0} 
             sx={{ 
@@ -284,7 +280,7 @@ const Users = () => {
           </Card>
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.9}>
           <Card 
             elevation={0} 
             sx={{ 
@@ -320,7 +316,7 @@ const Users = () => {
           </Card>
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.9}>
           <Card 
             elevation={0} 
             sx={{ 
@@ -355,8 +351,8 @@ const Users = () => {
             </CardContent>
           </Card>
         </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
+
+        <Grid item xs={12} sm={6} md={2.9}>
           <Card 
             elevation={0} 
             sx={{ 
@@ -373,19 +369,19 @@ const Users = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Tổng đơn hàng
+                    khách hàng
                   </Typography>
-                  <Typography variant="h4" fontWeight="bold" color={theme.palette.secondary.main}>
-                    {userStats.totalOrders}
+                  <Typography variant="h4" fontWeight="bold" color="primary.main">
+                    {userStats.customers}
                   </Typography>
                 </Box>
                 <Avatar 
                   sx={{ 
-                    bgcolor: alpha(theme.palette.secondary.main, 0.1), 
-                    color: theme.palette.secondary.main 
+                    bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                    color: theme.palette.primary.main 
                   }}
                 >
-                  <ShoppingBagIcon />
+                  <PeopleIcon />
                 </Avatar>
               </Box>
             </CardContent>
@@ -492,148 +488,141 @@ const Users = () => {
             <TableHead>
               <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
                 <TableCell sx={{ fontWeight: 'bold' }}>Người dùng</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Thông tin liên hệ</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Vai trò</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Trạng thái</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Ngày tham gia</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Đơn hàng</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((user, index) => (
-                <TableRow 
-                  key={user.id} 
-                  sx={{ 
-                    '&:last-child td, &:last-child th': { border: 0 },
-                    '&:nth-of-type(odd)': { bgcolor: alpha(theme.palette.primary.main, 0.01) },
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
-                    transition: 'background-color 0.2s'
-                  }}
-                >
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: getAvatarColor(user.name),
-                          width: 40,
-                          height: 40,
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {user.name.charAt(0)}
-                      </Avatar>
+              {users && users.length > 0 ? (
+                users.map((user) => (
+                  <TableRow 
+                    key={user._id} 
+                    sx={{ 
+                      '&:last-child td, &:last-child th': { border: 0 },
+                      '&:nth-of-type(odd)': { bgcolor: alpha(theme.palette.primary.main, 0.01) },
+                      '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        {user.avatar ? (
+                          <Avatar 
+                            src={user.avatar}
+                            alt={user.displayName || user.username}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                        ) : (
+                          <Avatar 
+                            sx={{ 
+                              width: 40, 
+                              height: 40,
+                              bgcolor: theme.palette.primary.main,
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            {(user.displayName || user.username)?.charAt(0)}
+                          </Avatar>
+                        )}
+                        <Box>
+                          <Typography variant="body1" fontWeight="medium">
+                            {user.displayName || user.username}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            ID: {user._id}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
                       <Box>
-                        <Typography variant="body1" fontWeight="medium">
-                          {user.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          ID: {user.id}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <EmailIcon fontSize="small" color="action" />
+                          <Typography variant="body2">{user.email}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <EmailIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{user.email}</Typography>
-                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        icon={getRoleIcon(user.role)}
+                        label={user.role === "client" ? "Khách hàng" : "Admin"} 
+                        color={getRoleColor(user.role)} 
+                        size="small"
+                        variant={user.role === "client" ? "outlined" : "filled"}
+                        sx={{ fontWeight: 'medium' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        icon={getStatusIcon(user.isActive)}
+                        label={user.isActive ? "Active" : "Inactive"} 
+                        color={user.isActive ? "success" : "error"} 
+                        size="small"
+                        sx={{ fontWeight: 'medium' }}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PhoneIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{user.phone}</Typography>
+                        <CalendarTodayIcon fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                        </Typography>
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      icon={getRoleIcon(user.role)}
-                      label={user.role} 
-                      color={getRoleColor(user.role)} 
-                      size="small"
-                      variant={user.role === "Khách hàng" ? "outlined" : "filled"}
-                      sx={{ fontWeight: 'medium' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      icon={getStatusIcon(user.status)}
-                      label={user.status} 
-                      color={getStatusColor(user.status)} 
-                      size="small"
-                      sx={{ fontWeight: 'medium' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarTodayIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{user.joinDate}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={`${user.orders} đơn`} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: alpha(theme.palette.info.main, 0.1),
-                        color: theme.palette.info.main,
-                        fontWeight: 'medium'
-                      }} 
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Xem chi tiết">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleViewUser(user)}
-                        sx={{ 
-                          color: theme.palette.info.main,
-                          bgcolor: alpha(theme.palette.info.main, 0.1),
-                          mr: 1,
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.info.main, 0.2),
-                          }
-                        }}
-                      >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Chỉnh sửa">
-                      <IconButton 
-                        size="small"
-                        sx={{ 
-                          color: theme.palette.warning.main,
-                          bgcolor: alpha(theme.palette.warning.main, 0.1),
-                          mr: 1,
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.warning.main, 0.2),
-                          }
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa">
-                      <IconButton 
-                        size="small"
-                        sx={{ 
-                          color: theme.palette.error.main,
-                          bgcolor: alpha(theme.palette.error.main, 0.1),
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.error.main, 0.2),
-                          }
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-              
-              {filteredUsers.length === 0 && (
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Xem chi tiết">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleViewUser(user)}
+                          sx={{ 
+                            color: theme.palette.info.main,
+                            bgcolor: alpha(theme.palette.info.main, 0.1),
+                            mr: 1,
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.info.main, 0.2),
+                            }
+                          }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Chỉnh sửa">
+                        <IconButton 
+                          size="small"
+                          sx={{ 
+                            color: theme.palette.warning.main,
+                            bgcolor: alpha(theme.palette.warning.main, 0.1),
+                            mr: 1,
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.warning.main, 0.2),
+                            }
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Xóa">
+                        <IconButton 
+                          size="small"
+                          sx={{ 
+                            color: theme.palette.error.main,
+                            bgcolor: alpha(theme.palette.error.main, 0.1),
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.error.main, 0.2),
+                            }
+                          }}
+                          onClick={() => handleDeleteClick(user)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                     <Box sx={{ textAlign: 'center' }}>
@@ -650,7 +639,7 @@ const Users = () => {
           </Table>
         </TableContainer>
         
-        <TablePagination
+        {/* <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={filteredUsers.length}
@@ -660,7 +649,7 @@ const Users = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
           labelRowsPerPage="Số dòng mỗi trang:"
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
-        />
+        /> */}
       </Card>
 
       {/* User Detail Dialog */}
@@ -683,6 +672,8 @@ const Users = () => {
               </Typography>
             </Box>
           </Box>
+
+          
         </DialogTitle>
         <DialogContent>
           {selectedUser && (
@@ -729,6 +720,36 @@ const Users = () => {
               </Grid>
             </Grid>
           )}
+
+           {/* Pagination */}
+           {/* {totalUsers > 0 && (
+              <Box
+                sx={{
+                  mt: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Pagination
+                  size="large"
+                  color="primary"
+                  showFirstButton
+                  showLastButton
+                  count={Math.ceil(totalUsers / DEFAULT_ITEMS_PER_PAGE)}
+                  page={page}
+                  // onChange={(e, value) => setPage(value)}
+                  renderItem={(item) => (
+                    <PaginationItem
+                      component={Link}
+                      to={`/admin/users${item.page === DEFAULT_PAGE ? '' : `?page=${item.page}`}`}
+                      {...item}
+                    />
+                  )}
+                />
+              </Box>
+            )} */}
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Đóng</Button>
@@ -737,8 +758,16 @@ const Users = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        user={userToDelete}
+        onConfirm={handleDeleteConfirm}
+      />
+
     </Box>
   )
 }
 
-export default Users
+export default Customers

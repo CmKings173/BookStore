@@ -2,6 +2,7 @@ import Joi from 'joi'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
+import { pagingSkipValue } from '~/utils/algorithms'
 
 const USER_ROLE = {
   CLIENT: 'client',
@@ -17,7 +18,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   username: Joi.string().required().trim().strict(),
   displayName: Joi.string().required().trim().strict(),
   avatar: Joi.string().default(null),
-  role: Joi.string().valid(USER_ROLE.CLIENT, USER_ROLE.ADMIN).default(USER_ROLE.ADMIN),
+  role: Joi.string().valid(USER_ROLE.CLIENT, USER_ROLE.ADMIN).default(USER_ROLE.CLIENT),
 
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
@@ -79,11 +80,55 @@ const update = async (userId, updateData) => {
   } catch (error) { throw new Error(error) }
 }
 
+const getAllUsers = async (page, itemsPerPage) => {
+  try {
+    const query = await GET_DB().collection(USER_COLLECTION_NAME).aggregate([
+      { $match: { _destroy: false } },
+      { $sort: { username: 1 } },
+      // $facet để xử lý nhiều luồng trong 1 query
+      {
+        $facet: {
+          // Luồng thứ nhất : query boards
+          queryUsers: [
+            { $skip: pagingSkipValue(page, itemsPerPage) }, // Tính toán giá trị skip
+            { $limit: itemsPerPage } // Giới hạn số lượng bản ghi trả về
+          ],
+          // Luồng thứ hai : query đếm tổng số lượng bản ghi books trong db và trả về vào biến countedALLBooks
+          queryTotalUsers: [{ $count: 'countedAllUsers' }]
+        }
+      }
+    ],
+    // Khai báo thêm thuộc tính collation locale 'en' để fix chữ B hoa và a thường
+    { collation: { locale: 'en' } }).toArray()
+
+    // console.log('query: ', query)
+    const res = query[0]
+
+    return {
+      users: res.queryUsers || [],
+      totalUsers: res.queryTotalUsers[0]?.countedAllUsers || 0
+    }
+
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const deleteOneById = async (userId) => {
+  try {
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).deleteOne({ _id: new ObjectId(userId) })
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   findOneByEmail,
-  update
+  update,
+  getAllUsers,
+  deleteOneById
 }

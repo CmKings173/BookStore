@@ -225,37 +225,11 @@ function Cart() {
     }
   }
 
-  // const applyPromoCode = () => {
-  //   // Mock promo code validation
-  //   const validCodes = {
-  //     SAVE10: { discount: 0.1, type: "percentage", description: "Giảm 10%" },
-  //     FREESHIP: { discount: 30000, type: "fixed", description: "Miễn phí vận chuyển" },
-  //     NEWUSER: { discount: 50000, type: "fixed", description: "Giảm 50k cho khách hàng mới" },
-  //   }
-
-  //   if (validCodes[promoCode.toUpperCase()]) {
-  //     setAppliedPromo(validCodes[promoCode.toUpperCase()])
-  //     setPromoCode("")
-  //   } else {
-  //     alert("Mã giảm giá không hợp lệ!")
-  //   }
-  // }
-
-  // const removePromoCode = () => {
-  //   setAppliedPromo(null)
-  // }
-
   // Calculations - chỉ tính cho sản phẩm được chọn
   const selectedCartItems = cartItems.filter((item) => selectedItems.has(item.id))
   const subtotal = selectedCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const savings = selectedCartItems.reduce((sum, item) => sum + (item.originalPrice - item.price) * item.quantity, 0)
   const shippingFee = subtotal > 500000 ? 0 : 30000
-  // const promoDiscount = appliedPromo
-  //   ? appliedPromo.type === "percentage"
-  //     ? subtotal * appliedPromo.discount
-  //     : appliedPromo.discount
-  //   : 0
-  // const total = subtotal + shippingFee - promoDiscount
   const total = subtotal + shippingFee
 
 

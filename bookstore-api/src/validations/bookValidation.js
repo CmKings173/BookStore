@@ -49,7 +49,7 @@ const createNew = async (req, res, next) => {
     dimensions:Joi.string().optional().trim().strict(),
     weight:Joi.number().optional().min(1),
     image:Joi.string().default(null),
-    inStock: Joi.boolean().required().default(false)
+    inStock: Joi.boolean().required().default((parent) => parent.stock > 0)
   })
 
   try {
@@ -79,7 +79,7 @@ const updateBook = async (req, res, next) => {
     format: Joi.string().optional(),
     dimensions:Joi.string().optional().trim().strict(),
     weight:Joi.number().optional().min(1),
-    inStock: Joi.boolean().default(false)
+    inStock: Joi.boolean().required().default((parent) => parent.stock > 0)
   })
   try {
     await correctCondition.validateAsync(req.body, {

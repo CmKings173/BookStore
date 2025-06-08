@@ -17,11 +17,26 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import LocalPhoneIcon from "@mui/icons-material/LocalPhone"
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser"
 import StorefrontIcon from "@mui/icons-material/Storefront"
-
+import { useNavigate } from 'react-router-dom'
 
 function AppBar() {
   const [searchValue, setSearchValue] = useState("")
+  const navigate = useNavigate() // Thêm hook này
 
+  // Thêm hàm xử lý tìm kiếm
+  const handleSearch = () => {
+    if (searchValue.trim()) {
+      // Chuyển hướng đến trang home với search term
+      navigate(`/home?search=${encodeURIComponent(searchValue.trim())}`)
+    }
+  }
+
+  // Thêm hàm xử lý khi nhấn Enter
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
   return (
     <Box
       sx={{
@@ -50,14 +65,14 @@ function AppBar() {
       </Box>
 
       {/* Divider */}
-      {/* <Box
+      <Box
         sx={{
           width: "1px",
           height: "40px",
           bgcolor: "rgba(255,255,255,0.3)",
           mx: 0.5
         }}
-      /> */}
+      />
        <Box
         sx={{
           flex: 1,
@@ -74,6 +89,7 @@ function AppBar() {
           fullWidth
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
+          onKeyDown={handleKeyPress}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -245,14 +261,14 @@ function AppBar() {
         </Box>
 
         {/* Divider */}
-        {/* <Box
+        <Box
           sx={{
             width: "1px",
             height: "40px",
             bgcolor: "rgba(255,255,255,0.3)",
             mx: 1
           }}
-        /> */}
+        />
 
         {/* Dark/Light Mode Toggle */}
         <ModeSelect />

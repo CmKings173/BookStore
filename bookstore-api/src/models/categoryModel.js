@@ -11,7 +11,7 @@ const CATEGORY_COLLECTION_SCHEMA = Joi.object({
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
 })
-const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
+// const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const validateBeforeCreate = async (data) => {
   return await CATEGORY_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
@@ -52,7 +52,7 @@ export const categoryModel = {
   CATEGORY_COLLECTION_SCHEMA,
   createNew,
   getCategories,
-  findOneById,
+  findOneById
 //   getDetails,
 //   pushColumnOrderIds,
 //   update,

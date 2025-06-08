@@ -57,7 +57,7 @@ function BookDetail() {
   console.log('id: ',id)
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, setQuantity] = useState(0)
   const [tabValue, setTabValue] = useState(0)
   const [book, setBook] = useState(null)
 

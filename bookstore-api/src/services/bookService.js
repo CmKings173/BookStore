@@ -15,7 +15,6 @@ const createNew = async (reqBody) => {
       ...reqBody,
       slug: slugify(reqBody.title)
     }
-    console.log(newBook)
     // Gọi tới tầng Model để xử lí lưu bản ghi newBook vào Database
     const createdBook = await bookModel.createNew(newBook)
 
@@ -60,14 +59,18 @@ const deleteBook = async (bookId) => {
 }
 
 
-const getAllBooks = async (page, itemsPerPage) => {
+const getAllBooks = async (page, itemsPerPage, categoryId = null, search = '') => {
   try {
-
     // Nếu không có giá trị page hoặc itemsPerPage được truyền từ FE, gán giá trị mặc định
     if (!page) page = DEFAULT_PAGE
     if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
 
-    const results = await bookModel.getAllBooks(parseInt(page, 10), parseInt(itemsPerPage, 10))
+    const results = await bookModel.getAllBooks(
+      parseInt(page, 10),
+      parseInt(itemsPerPage, 10),
+      categoryId,
+      search
+    )
 
     return results
   } catch (error) { throw error }
@@ -85,15 +88,30 @@ const updateBook = async (bookId, reqBody) => {
   } catch (error) { throw new Error(error)}
 }
 
+const searchBooks = async (searchTerm, page, itemsPerPage, categoryId = null) => {
+  try {
+    // Nếu không có giá trị page hoặc itemsPerPage được truyền từ FE, gán giá trị mặc định
+    if (!page) page = DEFAULT_PAGE
+    if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
+
+    const results = await bookModel.searchBooks(
+      searchTerm,
+      parseInt(page, 10),
+      parseInt(itemsPerPage, 10),
+      categoryId
+    )
+
+    return results
+  } catch (error) { throw error }
+}
+
 const bookService = {
   createNew,
   getDetails,
   deleteBook,
   getAllBooks,
-  updateBook
-  // moveCardToDifferentColumn,
-  // getBoards
-
+  updateBook,
+  searchBooks
 }
 
 export { bookService }

@@ -58,8 +58,6 @@ const getPageTitle = (pathname) => {
       return "Quản lý sách"
     case "/admin/orders":
       return "Quản lý đơn hàng"
-    case "/admin/discounts":
-      return "Mã giảm giá"
     case "/admin/customers":
       return "Quản lý khách hàng"
     case "/admin/analytics":

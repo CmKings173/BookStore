@@ -19,21 +19,28 @@ import OrderDetail from '~/pages/UserPage/OrderDetail'
 import DashBoard from '~/pages/AdminPage/Dashboard'
 import Books from '~/pages/AdminPage/Books'
 import Orders from '~/pages/AdminPage/Orders'
-import Users from '~/pages/AdminPage/Users'
+import Customers from '~/pages/AdminPage/Customers'
 import Analytics from '~/pages/AdminPage/Analytics'
-
 import AdminLayout from '~/components/Layout/AdminLayout'
 // Giải pháp clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập vào board
 // Sử dụng Outlet để hiển thị các child route
-const ProtectedRoute = ( { user } ) => {
+const ProtectedRoute = ({ user }) => {
   console.log('ProtectedRoute - User:', user)
   if (!user) return <Navigate to='/login' replace={true}/>
   return <Outlet />
 }
 
+// Protected Route cho admin
+const AdminProtectedRoute = ({ user }) => {
+  console.log('AdminProtectedRoute - User:', user)
+  if (!user) return <Navigate to='/login' replace={true}/>
+  if (user.role !== 'admin') return <Navigate to='/home' replace={true}/>
+  return <Outlet />
+}
+
 // Admin Layout Component
 const AdminLayoutWrapper = () => {
-  console.log('AdminLayoutWrapper rendering')
+  // console.log('AdminLayoutWrapper rendering')
   return (
     <AdminLayout>
       <Outlet />
@@ -70,14 +77,15 @@ function App() {
       </Route>
 
       {/* Admin Routes */}
-      <Route path="/admin" element={<AdminLayoutWrapper />}>
-        <Route index element={<DashBoard />} />
-        <Route path="dashboard" element={<DashBoard />} />
-        <Route path="books" element={<Books />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="users" element={<Users />} />
-        <Route path="analytics" element={<Analytics />} />
-
+      <Route element={<AdminProtectedRoute user={currentUser} />}>
+        <Route path="/admin" element={<AdminLayoutWrapper />}>
+          <Route index element={<DashBoard />} />
+          <Route path="dashboard" element={<DashBoard />} />
+          <Route path="books" element={<Books />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="analytics" element={<Analytics />} />
+        </Route>
       </Route>
 
       {/* 404 Route */}

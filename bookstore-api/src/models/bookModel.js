@@ -23,7 +23,7 @@ const BOOK_COLLECTION_SCHEMA = Joi.object({
   format: Joi.string().optional(),
   dimensions:Joi.string().optional().trim().strict(),
   weight:Joi.number().optional().min(1),
-  inStock: Joi.boolean().required().default(false),
+  inStock: Joi.boolean().required().default((parent) => parent.stock > 0),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
@@ -42,15 +42,7 @@ const createNew = async (data) => {
   try {
     // Validate data một lần nữa trước khi tạo book
     const validData = await validateBeforeCreate(data)
-    // const newBookToAdd = {
-    //   ...validData,
-    //   categoryId: new ObjectId('683dbf0b81f5b0715b0df7f5')
-    // }
-
-    // const createdBook = await GET_DB().collection(BOOK_COLLECTION_NAME).insertOne(validData)
-    // return createdBook
-
-    // // Ngắn gọn hơn
+    validData.categoryId = new ObjectId(validData.categoryId)
     return await GET_DB().collection(BOOK_COLLECTION_NAME).insertOne(validData)
   } catch (error) {
     throw new Error(error)
@@ -78,73 +70,102 @@ const deleteBook = async (bookId) => {
 }
 
 // Lấy tất cả sách và tên category tương ứng
-const getAllBooks = async (page, itemsPerPage) => {
+const getAllBooks = async (page, itemsPerPage, filterCategoryId = null, searchTerm = '') => {
   try {
-    const query = await GET_DB().collection(BOOK_COLLECTION_NAME).aggregate([
-      { $match: { _destroy: false } },
-      // Chuyển đổi categoryId từ string sang ObjectId
-      { $addFields: {
-        categoryIdObject: { $toObjectId: '$categoryId' }
-      } },
-      { $lookup: {
-        from: categoryModel.CATEGORY_COLLECTION_NAME,
-        localField: 'categoryIdObject',
-        foreignField: '_id',
-        as: 'category'
-      } },
-      { $unwind: '$category' },
-      { $project: {
-        _id: 1,
-        title: 1,
-        slug: 1,
-        author: 1,
-        subtitle: 1,
-        publisher:1,
-        publishYear:1,
-        pages:1,
-        format:1,
-        dimensions:1,
-        description:1,
-        weight:1,
-        price: 1,
-        stock: 1,
-        image:1,
-        inStock: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        'category._id': 1,
-        'category.name': 1
-      } },
-      { $sort: { title: 1 } },
-      // $facet để xử lý nhiều luồng trong 1 query
-      {
-        $facet: {
-          // Luồng thứ nhất : query boards
-          queryBooks: [
-            { $skip: pagingSkipValue(page, itemsPerPage) }, // Tính toán giá trị skip
-            { $limit: itemsPerPage } // Giới hạn số lượng bản ghi trả về
-          ],
-          // Luồng thứ hai : query đếm tổng số lượng bản ghi books trong db và trả về vào biến countedALLBooks
-          queryTotalBooks: [{ $count: 'countedAllBooks' }]
-        }
-      }
-    ],
-    // Khai báo thêm thuộc tính collation locale 'en' để fix chữ B hoa và a thường
-    { collation: { locale: 'en' } }).toArray()
+    // Tạo stage $match động
+    const matchStage = { _destroy: false }
 
-    // console.log('query: ', query)
-    const res = query[0]
-
-    return {
-      books: res.queryBooks || [],
-      totalBooks: res.queryTotalBooks[0]?.countedAllBooks || 0
+    if (filterCategoryId) {
+      // Chuyển đổi categoryId thành ObjectId
+      matchStage.categoryId = new ObjectId(filterCategoryId)
     }
 
+    // Thêm điều kiện tìm kiếm nếu có searchTerm
+    if (searchTerm) {
+      matchStage.$or = [
+        { title: { $regex: searchTerm, $options: 'i' } }, // Tìm kiếm không phân biệt hoa thường
+        { author: { $regex: searchTerm, $options: 'i' } }
+      ]
+    }
+
+    // Tách riêng pipeline để đếm tổng số sách
+    const countPipeline = [
+      { $match: matchStage }
+    ]
+
+    // Pipeline chính để lấy dữ liệu sách
+    const dataPipeline = [
+      { $match: matchStage },
+      // Chuyển categoryId từ string sang ObjectId để lookup hoạt động
+      {
+        $addFields: {
+          categoryIdObject: { $toObjectId: '$categoryId' }
+        }
+      },
+      {
+        $lookup: {
+          from: categoryModel.CATEGORY_COLLECTION_NAME,
+          localField: 'categoryIdObject',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      { $unwind: '$category' },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          slug: 1,
+          author: 1,
+          subtitle: 1,
+          publisher: 1,
+          publishYear: 1,
+          pages: 1,
+          format: 1,
+          dimensions: 1,
+          description: 1,
+          weight: 1,
+          price: 1,
+          stock: 1,
+          image: 1,
+          inStock: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          categoryId: 1,
+          'category._id': 1,
+          'category.name': 1
+        }
+      },
+      { $sort: { title: 1 } },
+      { $skip: pagingSkipValue(page, itemsPerPage) },
+      { $limit: itemsPerPage }
+    ]
+
+    // Thực hiện song song cả hai pipeline
+    const [totalCount, books] = await Promise.all([
+      GET_DB().collection(BOOK_COLLECTION_NAME).countDocuments(matchStage),
+      GET_DB().collection(BOOK_COLLECTION_NAME).aggregate(dataPipeline).toArray()
+    ])
+
+    // // Log để debug
+    // console.log('Query Result:', {
+    //   totalBooks: totalCount,
+    //   booksCount: books.length,
+    //   firstBook: books[0],
+    //   categoryId: books[0]?.categoryId,
+    //   searchTerm: searchTerm
+    // })
+
+    return {
+      books: books || [],
+      totalBooks: totalCount
+    }
   } catch (error) {
     // console.error('Error in getAllBooks:', error)
     throw new Error(error)
   }
 }
+
 
 const updateBook = async (bookId, updateData) => {
   try {
@@ -166,9 +187,101 @@ const updateBook = async (bookId, updateData) => {
         { $set: updateData },
         { returnDocument: 'after', upsert: false }
       )
+      // console.log('result: ',result)
     return result
   } catch (error) {
     throw new Error(error)
+  }
+}
+
+// Tìm kiếm sách theo từ khóa
+const searchBooks = async (searchTerm, page, itemsPerPage, filterCategoryId = null) => {
+  try {
+    // Tạo stage $match động
+    const matchStage = { _destroy: false }
+
+    // Thêm điều kiện tìm kiếm
+    if (searchTerm) {
+      matchStage.$or = [
+        { title: { $regex: searchTerm, $options: 'i' } },
+        { author: { $regex: searchTerm, $options: 'i' } },
+        { publisher: { $regex: searchTerm, $options: 'i' } }
+      ]
+    }
+
+    // Thêm điều kiện lọc theo category nếu có
+    if (filterCategoryId) {
+      matchStage.categoryId = new ObjectId(filterCategoryId)
+    }
+
+    // Pipeline chính để lấy dữ liệu sách
+    const dataPipeline = [
+      { $match: matchStage },
+      {
+        $addFields: {
+          categoryIdObject: { $toObjectId: '$categoryId' }
+        }
+      },
+      {
+        $lookup: {
+          from: categoryModel.CATEGORY_COLLECTION_NAME,
+          localField: 'categoryIdObject',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      { $unwind: '$category' },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          slug: 1,
+          author: 1,
+          subtitle: 1,
+          publisher: 1,
+          publishYear: 1,
+          pages: 1,
+          format: 1,
+          dimensions: 1,
+          description: 1,
+          weight: 1,
+          price: 1,
+          stock: 1,
+          image: 1,
+          inStock: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          categoryId: 1,
+          'category._id': 1,
+          'category.name': 1
+        }
+      },
+      { $sort: { title: 1 } },
+      { $skip: pagingSkipValue(page, itemsPerPage) },
+      { $limit: itemsPerPage }
+    ]
+
+    // Thực hiện song song cả đếm và lấy dữ liệu
+    const [totalCount, books] = await Promise.all([
+      GET_DB().collection(BOOK_COLLECTION_NAME).countDocuments(matchStage),
+      GET_DB().collection(BOOK_COLLECTION_NAME).aggregate(dataPipeline).toArray()
+    ])
+
+    // Log để debug
+    console.log('Search Result:', {
+      searchTerm,
+      totalBooks: totalCount,
+      booksCount: books.length,
+      firstBook: books[0]
+    })
+
+    return {
+      books: books || [],
+      totalBooks: totalCount
+    }
+  } catch (error) {
+    console.error('Error in searchBooks:', error)
+    throw error
   }
 }
 
@@ -179,5 +292,6 @@ export const bookModel = {
   findOneById,
   deleteBook,
   getAllBooks,
-  updateBook
+  updateBook,
+  searchBooks
 }

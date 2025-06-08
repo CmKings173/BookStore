@@ -71,7 +71,7 @@ const menuItems = [
   {
     title: "Người dùng",
     icon: <PeopleIcon />,
-    path: "/admin/users",
+    path: "/admin/customers",
     badge: null,
   },
 ]
@@ -155,21 +155,6 @@ function Sidebar({ open, onClose }) {
                   fontWeight: location.pathname === item.path ? "bold" : "normal",
                 }}
               />
-              {item.badge && (
-                <Chip
-                  label={item.badge}
-                  size="small"
-                  sx={{
-                    backgroundColor: "#e74c3c",
-                    color: "white",
-                    fontSize: "0.7rem",
-                    height: 20,
-                    "& .MuiChip-label": {
-                      px: 1,
-                    },
-                  }}
-                />
-              )}
             </ListItemButton>
           </ListItem>
         ))}

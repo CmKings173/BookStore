@@ -1,4 +1,3 @@
-
 /* eslint-disable no-useless-catch */
 import { userModel } from '../models/userModel'
 import ApiError from '~/utils/ApiError'
@@ -11,6 +10,8 @@ import { BrevoProvider } from '~/providers/BrevoProvider'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { cartModel } from '~/models/cartModel'
+import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_PAGE } from '~/utils/constants'
 
 const createNew = async (reqBody) => {
   try {
@@ -46,7 +47,11 @@ const createNew = async (reqBody) => {
 
     // Gọi tới Provider để gửi mail
     await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
-
+    // Tạo cart cho user mới
+    await cartModel.createNew({ 
+      userId: typeof getNewUser._id === 'object' ? getNewUser._id.toString() : getNewUser._id,
+      items: []
+    })
     // Return trả về dữ liệu cho tầng Controller
     return pickUser(getNewUser)
   } catch (error) { throw error }
@@ -172,10 +177,46 @@ const update = async (userId, reqBody, userAvatarFile) => {
   } catch (error) { throw error }
 }
 
+const getAllUsers = async (page, itemsPerPage ) => {
+  try {
+    // Nếu không có giá trị page hoặc itemsPerPage được truyền từ FE, gán giá trị mặc định
+    if (!page) page = DEFAULT_PAGE
+    if (!itemsPerPage) itemsPerPage = DEFAULT_ITEMS_PER_PAGE
+
+    const results = await userModel.getAllUsers(parseInt(page, 10), parseInt(itemsPerPage, 10))
+
+    return results
+  } catch (error) { throw error }
+}
+
+const findCartByUserId = async (userid) => {
+  try {
+    const result = await cartModel.findOneByUserId(userid)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
+
+const deleteUser = async (userId) => {
+  try {
+    const cart = await findCartByUserId(userId)
+    if (cart) {
+      await cartModel.deleteOneById(cart._id)
+    }
+    const result = await userModel.deleteOneById(userId)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const userService = {
   createNew,
   login,
   verifyAccount,
   refreshToken,
-  update
+  update,
+  getAllUsers,
+  findCartByUserId,
+  deleteUser
 }

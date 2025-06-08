@@ -7,11 +7,27 @@ const Router = express.Router()
 
 Router.route('/')
   .get(bookController.getAllBooks)
-  .post( bookValidation.createNew, bookController.createNew)
+  .post(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    bookValidation.createNew,
+    bookController.createNew
+  )
+
+Router.route('/search')
+  .get(bookController.searchBooks)
 
 Router.route('/:id')
-  .get( bookController.getDetails)
-  .put(bookValidation.updateBook, bookController.updateBook )
-  .delete(bookValidation.deleteBook, bookController.deleteBook)
+  .get(bookController.getDetails)
+  .put(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    bookValidation.updateBook,
+    bookController.updateBook)
+  .delete(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    bookValidation.deleteBook,
+    bookController.deleteBook)
 
 export const bookRoute = Router

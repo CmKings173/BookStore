@@ -27,7 +27,7 @@ import {
   Zoom,
   Pagination,
   PaginationItem,
-
+  CircularProgress,
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
 import AddIcon from "@mui/icons-material/Add"
@@ -38,13 +38,15 @@ import MenuBookIcon from "@mui/icons-material/MenuBook"
 import InventoryIcon from "@mui/icons-material/Inventory"
 import TrendingUpIcon from "@mui/icons-material/TrendingUp"
 import FilterListIcon from "@mui/icons-material/FilterList"
-import { Link, useLocation } from "react-router-dom"
-import { fetchBooksAPI, fetchCategoriesAPI } from '~/apis/index'
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { fetchBooksAPI, fetchCategoriesAPI, searchBooksAPI } from '~/apis/index'
 import { deleteBookAPI } from '~/apis/admin/index'
 import AddBookDialog from './components/AddBookDialog'
 import DeleteBookDialog from './components/DeleteBookDialog'
 import { toast } from 'react-toastify'
 import UpdateBookDialog from './components/UpdateBookDialog'
+import {DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE} from '~/utils/constants'
+
 
 // Styled Components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -77,13 +79,23 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
     },
     "& .MuiTableBody-root": {
       "& .MuiTableRow-root": {
-        transition: "background-color 0.2s ease",
+        transition: "all 0.3s ease",
         "&:hover": {
-          backgroundColor: "#f8f9ff",
+          backgroundColor: theme.palette.mode === "dark" 
+            ? "rgba(255, 255, 255, 0.05)" 
+            : "rgba(102, 126, 234, 0.04)",
+          transform: "translateY(-2px)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          "& .MuiTableCell-root": {
+            color: theme.palette.mode === "dark" 
+              ? "#90caf9" 
+              : "#667eea",
+          },
         },
         "& .MuiTableCell-root": {
           borderBottom: "1px solid #f0f0f0",
           padding: "16px",
+          transition: "color 0.3s ease",
         },
       },
     },
@@ -116,14 +128,17 @@ const ActionButton = styled(IconButton)(({ theme, color }) => ({
 function Books() {
   
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [books, setBooks] = useState([])
-  // const [page, setPage] = useState(1)
-  const DEFAULT_ITEMS_PER_PAGE = 10
-  const DEFAULT_PAGE = 1
+  const [page, setPage] = useState(1)
   const [totalBooks, setTotalBooks] = useState(0)
   const [open, setOpen] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [categories, setCategories] = useState([])
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -145,6 +160,137 @@ function Books() {
   const [bookToDelete, setBookToDelete] = useState(null)
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false)
   const [selectedBook, setSelectedBook] = useState(null)
+
+  // Thêm debounce cho search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 700) // Đợi 500ms sau khi người dùng ngừng gõ
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Cập nhật URL khi debouncedSearchTerm thay đổi
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const newSearch = new URLSearchParams(location.search)
+        if (debouncedSearchTerm) {
+          newSearch.set('search', debouncedSearchTerm)
+        } else {
+          newSearch.delete('search')
+        }
+        newSearch.set('page', '1') // Reset về trang 1 khi search
+        
+        // Sử dụng API tìm kiếm nếu có từ khóa
+        const apiUrl = `?${newSearch.toString()}`
+        // console.log('Searching with URL:', apiUrl)
+        
+        let result
+        if (debouncedSearchTerm) {
+          result = await searchBooksAPI(apiUrl)
+          // console.log('Search result:', result)
+        } else {
+          result = await fetchBooksAPI(apiUrl)
+          // console.log('Fetch result:', result)
+        }
+        
+        if (result && result.books) {
+          setBooks(result.books)
+          setTotalBooks(result.totalBooks)
+          setError(null)
+        } else {
+          console.log('Invalid response format:', result)
+          setBooks([])
+          setTotalBooks(0)
+          setError('Không thể tải dữ liệu sách')
+        }
+        
+        navigate(`/admin/books${apiUrl}`)
+      } catch (error) {
+        // console.error('Lỗi khi tải dữ liệu:', error)
+        setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.')
+        setBooks([])
+        setTotalBooks(0)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [debouncedSearchTerm])
+
+  // Thêm lại useEffect cho pagination và category filter
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const query = new URLSearchParams(location.search)
+        const pageFromUrl = parseInt(query.get('page')) || DEFAULT_PAGE
+        setPage(pageFromUrl)
+
+        // Thiết lập category filter từ URL
+        const categoryIdFromUrl = query.get('categoryId')
+        if (categoryIdFromUrl) {
+          setCategoryFilter(categoryIdFromUrl)
+        } else {
+          setCategoryFilter("")
+        }
+
+        // Lấy sách với tham số tìm kiếm hiện tại
+        const currentSearch = query.get('search') || ''
+        setSearchTerm(currentSearch)
+        
+        const searchParams = new URLSearchParams(location.search)
+        const apiUrl = `?${searchParams.toString()}`
+        // console.log('Fetching books with URL:', apiUrl)
+        
+        const booksRes = await fetchBooksAPI(apiUrl)
+        // console.log('Books response:', booksRes)
+        
+        if (booksRes && booksRes.books) {
+          setBooks(booksRes.books)
+          setTotalBooks(booksRes.totalBooks)
+          setError(null)
+        } else {
+          console.log('Invalid response format:', booksRes)
+          setBooks([])
+          setTotalBooks(0)
+          setError('Không thể tải dữ liệu sách')
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải dữ liệu:', err)
+        setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.')
+        setBooks([])
+        setTotalBooks(0)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBooks()
+  }, [location.search])
+
+  // Tách riêng việc fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesRes = await fetchCategoriesAPI()
+        if (categoriesRes && categoriesRes.data) {
+          setCategories(categoriesRes.data)
+        } else if (categoriesRes && Array.isArray(categoriesRes)) {
+          setCategories(categoriesRes)
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+        setError('Không thể tải danh mục sách. Vui lòng thử lại sau.')
+      }
+    }
+
+    fetchCategories()
+  }, []) // Chỉ chạy một lần khi component mount
 
   const handleClickOpen = () => {
     setOpen(true)
@@ -177,11 +323,6 @@ function Books() {
       ...formData,
       [name]: value,
     })
-  }
-
-  const handleSubmit = () => {
-    console.log(formData)
-    setOpen(false)
   }
 
   const handleDeleteClick = (book) => {
@@ -220,36 +361,78 @@ function Books() {
     setSelectedBook(null)
   }
 
-  const filteredBooks = books.filter((book) => {
-    const matchesSearch =
-      book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !categoryFilter || book.categoryName === categoryFilter
-    return matchesSearch && matchesCategory
-  })
+  const handleCategoryChange = (e) => {
+    const newCategory = e.target.value
+    setCategoryFilter(newCategory)
+    
+    const newSearch = new URLSearchParams(location.search)
+    if (newCategory) {
+      newSearch.set('categoryId', newCategory)
+    } else {
+      newSearch.delete('categoryId')
+    }
+    newSearch.set('page', '1')
+    navigate(`/admin/books?${newSearch.toString()}`)
+  }
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value)
+  }
 
   const updateStateData = (res) => {
-    setBooks(res.books || [])
-    setTotalBooks(res.totalBooks || 0)
-  }
-  const query = new URLSearchParams(location.search)
-  const page = parseInt(query.get('page') || '1', 10)
-
-  useEffect(() => {
-    // setPage(currentPage)
-    fetchBooksAPI(location.search).then(updateStateData)
-  }, [location.search])
-
-    const afterCreateNewOrUpdate = () => {
-      fetchBooksAPI(location.search).then(updateStateData)
+    if (res && res.books) {
+      // Nếu có dữ liệu hợp lệ
+      setBooks(res.books) // Cập nhật danh sách sách
+      setTotalBooks(res.totalBooks) // Cập nhật tổng số sách
+      setError(null) // Xóa lỗi nếu có
+    } else {
+      // Nếu không có dữ liệu hoặc dữ liệu không hợp lệ
+      setBooks([]) // Reset danh sách sách
+      setTotalBooks(0) // Reset tổng số sách
+      setError('Không thể tải dữ liệu sách') // Set lỗi
     }
+  }
 
-  const inStockBooks = books?.filter((book) => book.inStock === true ).length || 0
-  const totalValue = books?.reduce((sum, book) => sum + book.price * book.stock, 0) || 0
-  const categories = [...new Set(books.map((book) => book.categoryName))]
+  const afterCreateNewOrUpdate = () => {
+    fetchBooksAPI(location.search).then(updateStateData)
+  }
 
-  if (!books) {
-    return <PageLoadingSpinner caption="Đang tải sách..." />
+  const inStockBooks = books?.filter((book) => book.inStock === true).length || 0
+
+  // Tính tổng giá trị kho
+  const totalValue = books?.reduce((sum, book) => {
+    return sum + (book.price * book.stock) // Giá * Số lượng
+  }, 0) || 0
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: 2 }}>
+        <Typography color="error">{error}</Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => window.location.reload()}
+          sx={{ mt: 2 }}
+        >
+          Thử lại
+        </Button>
+      </Box>
+    )
+  }
+
+  if (!books || books.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Typography>Không có dữ liệu sách</Typography>
+      </Box>
+    )
   }
 
   return (
@@ -344,7 +527,7 @@ function Books() {
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
             <Typography variant="h5" sx={{ fontWeight: "600", color: "#2d3748" }}>
-              Danh sách sản phẩm ({filteredBooks.length})
+              Danh sách sản phẩm ({books.length})
             </Typography>
             <Button
               variant="contained"
@@ -376,11 +559,11 @@ function Books() {
                 size="small"
                 fullWidth
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearch}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#9ca3af" }} />
+                      <SearchIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#fff' : '#9ca3af' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -390,6 +573,18 @@ function Books() {
                     "& fieldset": { border: "none" },
                     "&:hover fieldset": { border: "none" },
                     "&.Mui-focused fieldset": { border: "none" },
+                    "& .MuiInputBase-input": {
+                      color: theme => theme.palette.mode === 'dark' ? '#fff' : '#2d3748',
+                    },
+                    "& .MuiInputBase-input::placeholder": {
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : '#9ca3af',
+                      opacity: 1,
+                    },
+                  },
+                  "& .Mui-focused": {
+                    "& .MuiInputBase-input": {
+                      color: theme => theme.palette.mode === 'dark' ? '#fff' : '#2d3748',
+                    },
                   },
                 }}
               />
@@ -405,7 +600,7 @@ function Books() {
               <Select
                 value={categoryFilter}
                 label="Lọc theo thể loại"
-                onChange={(e) => setCategoryFilter(e.target.value)}
+                onChange={handleCategoryChange}
                 sx={{
                   borderRadius: "12px",
                   backgroundColor: "white",
@@ -416,8 +611,8 @@ function Books() {
               >
                 <MenuItem value="">Tất cả</MenuItem>
                 {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -478,7 +673,7 @@ function Books() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: "600", color: "#2d3748" }}>
+                      <Typography variant="body2" sx={{ fontWeight: "500", color: theme => theme.palette.mode === 'dark'? '#fff':"#2d3748" }}>
                         {book.price.toLocaleString("vi-VN")}₫
                       </Typography>
                     </TableCell>
@@ -529,14 +724,7 @@ function Books() {
 
       {/* Pagination */}
       {totalBooks > 0 && (
-        <Box
-          sx={{
-            mt: 4,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+        <Box sx={{ mt: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Pagination
             size="large"
             color="primary"
@@ -544,14 +732,30 @@ function Books() {
             showLastButton
             count={Math.ceil(totalBooks / DEFAULT_ITEMS_PER_PAGE)}
             page={page}
-            // onChange={(e, value) => setPage(value)}
-            renderItem={(item) => (
-              <PaginationItem
-                component={Link}
-                to={`/admin/books${item.page === DEFAULT_PAGE ? '' : `?page=${item.page}`}`}
-                {...item}
-              />
-            )}
+            renderItem={(item) => {
+              const newSearch = new URLSearchParams(location.search)
+              
+              // Cập nhật page
+              if (item.page === DEFAULT_PAGE) {
+                newSearch.delete('page')
+              } else {
+                newSearch.set('page', item.page)
+              }
+
+              // Giữ lại category nếu có
+              const currentCategory = newSearch.get('categoryId')
+              if (currentCategory) {
+                newSearch.set('categoryId', currentCategory)
+              }
+
+              return (
+                <PaginationItem
+                  component={Link}
+                  to={`/admin/books${newSearch.toString() ? `?${newSearch.toString()}` : ''}`}
+                  {...item}
+                />
+              )
+            }}
           />
         </Box>
       )}

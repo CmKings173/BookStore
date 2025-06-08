@@ -38,13 +38,17 @@ const deleteBook = async (req, res, next) => {
 
 const getAllBooks = async (req, res, next) => {
   try {
-    const { page, itemsPerPage } = req.query
-    const result = await bookService.getAllBooks( page, itemsPerPage)
-
-    // Có kết quả thì trả về phía client
+    const { page, itemsPerPage, categoryId, search } = req.query
+    const result = await bookService.getAllBooks(
+      parseInt(page, 10),
+      parseInt(itemsPerPage, 10),
+      categoryId,
+      search
+    )
     res.status(StatusCodes.OK).json(result)
-
-  } catch (error) {next(error)}
+  } catch (error) {
+    next(error)
+  }
 }
 
 const updateBook = async (req, res, next) => {
@@ -61,12 +65,26 @@ const updateBook = async (req, res, next) => {
   } catch (error) {next(error)}
 }
 
+const searchBooks = async (req, res, next) => {
+  try {
+    const { page, itemsPerPage, categoryId, search } = req.query
+    const result = await bookService.searchBooks(
+      search,
+      parseInt(page, 10),
+      parseInt(itemsPerPage, 10),
+      categoryId
+    )
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 
 export const bookController = {
   createNew,
   getDetails,
   deleteBook,
   getAllBooks,
-  updateBook
-
+  updateBook,
+  searchBooks
 }

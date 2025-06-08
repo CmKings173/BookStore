@@ -21,8 +21,23 @@ Router.route('/refresh_token')
   .get(userController.refreshToken)
 
 Router.route('/update')
-  .put(authMiddleware.isAuthorized,
+  .put(
+    authMiddleware.isAuthorized,
     multerUploadMiddleware.upload.single('avatar'),
     userValidation.update,
     userController.update)
+
+Router.route('/delete/:id')
+  .delete(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    userValidation.deleteUser,
+    userController.deleteUser)
+
+Router.route('/')
+  .get(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    userController.getAllUsers)
+
 export const userRoute = Router

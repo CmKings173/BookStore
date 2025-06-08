@@ -5,3 +5,4 @@ export const fetchBooksDetailAPI = async (bookId) => {
   const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/books/${bookId}`)
   return response.data
 }
+
