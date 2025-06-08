@@ -55,9 +55,11 @@ import DeleteUserDialog from '~/pages/AdminPage/components/DeleteUserDialog'
 
 const getStatusColor = (status) => {
   switch (status) {
-    case "Hoạt động":
+    case "active":
+    case true:
       return "success"
-    case "Tạm khóa":
+    case "inactive":
+    case false:
       return "error"
     default:
       return "default"
