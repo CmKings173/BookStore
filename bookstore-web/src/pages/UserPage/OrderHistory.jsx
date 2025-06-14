@@ -168,20 +168,20 @@ function OrderHistory() {
     }
 
     // Filter by time
-    if (timeFilter !== "all") {
-      const now = new Date()
-      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
-      const ninetyDaysAgo = new Date(now.setDate(now.getDate() - 60)) // 30 + 60 = 90 days
-      const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 3)) // 3 + 3 = 6 months
+    // if (timeFilter !== "all") {
+    //   const now = new Date()
+    //   const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
+    //   const ninetyDaysAgo = new Date(now.setDate(now.getDate() - 60)) // 30 + 60 = 90 days
+    //   const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 3)) // 3 + 3 = 6 months
 
-      filtered = filtered.filter((order) => {
-        const orderDate = new Date(order.date)
-        if (timeFilter === "30days") return orderDate >= thirtyDaysAgo
-        if (timeFilter === "90days") return orderDate >= ninetyDaysAgo
-        if (timeFilter === "6months") return orderDate >= sixMonthsAgo
-        return true
-      })
-    }
+    //   filtered = filtered.filter((order) => {
+    //     const orderDate = new Date(order.date)
+    //     if (timeFilter === "30days") return orderDate >= thirtyDaysAgo
+    //     if (timeFilter === "90days") return orderDate >= ninetyDaysAgo
+    //     if (timeFilter === "6months") return orderDate >= sixMonthsAgo
+    //     return true
+    //   })
+    // }
 
     // Filter by status
     if (statusFilter !== "all") {
