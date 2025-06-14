@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { useCart } from "~/hooks/useCart"
 import AppBar from "~/components/AppBar/AppBar"
 import PageLoadingSpinner from "~/components/Loading/PageLoadingSpinner"
 import Container from "@mui/material/Container"
@@ -23,6 +24,7 @@ import Chip from "@mui/material/Chip"
 import Tabs from "@mui/material/Tabs"
 import Tab from "@mui/material/Tab"
 import Footer from "~/components/Footer/Footer"
+import { toast } from 'react-toastify'
 
 // Icons
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
@@ -33,9 +35,8 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext"
 import LocalShippingIcon from "@mui/icons-material/LocalShipping"
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser"
 import CachedIcon from "@mui/icons-material/Cached"
+import {fetchBooksDetailAPI, fetchRelatedBooksAPI} from '~/apis/client'
 
-// import  { mockBooks, mockCategories } from '~/apis/mockData'
-import {fetchBooksDetailAPI} from '~/apis/client'
 function TabPanel(props) {
   const { children, value, index, ...other } = props
 
@@ -54,12 +55,13 @@ function TabPanel(props) {
 
 function BookDetail() {
   const { id } = useParams()
-  console.log('id: ',id)
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(0)
   const [tabValue, setTabValue] = useState(0)
   const [book, setBook] = useState(null)
+  const [relatedBooks, setRelatedBooks] = useState([])
+  const { addToCart, buyNow } = useCart()
 
   useEffect(() => {
     const fetchBookDetails = async () => {
@@ -72,11 +74,16 @@ function BookDetail() {
 
       try {
         const bookData = await fetchBooksDetailAPI(id)
-        console.log('bookData:', bookData)
         setBook(bookData)
+        
+        // Fetch related books
+        if (bookData.categoryId) {
+          const relatedBooksData = await fetchRelatedBooksAPI(bookData.categoryId, id)
+          setRelatedBooks(relatedBooksData)
+        }
       } catch (error) {
-        console.error("Lỗi khi lấy chi tiết sách:", error)
         setBook(null)
+        toast.error("Có lỗi xảy ra khi tải thông tin sách")
       } finally {
         setLoading(false)
       }
@@ -102,6 +109,35 @@ function BookDetail() {
 
   const handleGoBack = () => {
     navigate(-1)
+  }
+
+  const handleAddToCart = async () => {
+    if (!book) return
+    
+    try {
+      if (quantity > 0) {
+        await addToCart(book._id, quantity)
+      } else {
+        toast.error('Vui lòng chọn số lượng', {position: "top-right"})
+      }
+    } catch (error) {
+      toast.error("Lỗi khi thêm vào giỏ hàng:", error)
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if (!book) return
+    
+    try {
+      if (quantity > 0) {
+        await buyNow(book._id, quantity)
+        navigate('/cart')
+      } else {
+        toast.error('Vui lòng chọn số lượng!', {position: "top-right"})
+      }
+    } catch (error) {
+      toast.error("Lỗi khi mua ngay!", {position: "top-right"})
+    }
   }
 
   if (loading) {
@@ -294,17 +330,6 @@ function BookDetail() {
                 {book.subtitle}
               </Typography>
 
-              {/* Rating
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Rating value={4.5} precision={0.1} readOnly />
-                <Typography variant="body2" sx={{ ml: 1, color: "#f57c00", fontWeight: "500" }}>
-                  4.5
-                </Typography>
-                <Typography variant="body2" sx={{ ml: 1 }}>
-                  (125 đánh giá)
-                </Typography>
-              </Box> */}
-
               <Divider sx={{ my: 2 }} />
 
               {/* Price */}
@@ -450,8 +475,10 @@ function BookDetail() {
                 <Button
                   variant="outlined"
                   size="large"
+                  className="interceptor-loading"
                   startIcon={<ShoppingCartIcon />}
                   disabled={!book.inStock}
+                  onClick={handleAddToCart}
                   sx={{
                     py: 1.5,
                     px: 4,
@@ -470,7 +497,9 @@ function BookDetail() {
                 <Button
                   variant="contained"
                   size="large"
+                  className="interceptor-loading"
                   disabled={!book.inStock}
+                  onClick={handleBuyNow}
                   sx={{
                     py: 1.5,
                     px: 4,
@@ -486,7 +515,6 @@ function BookDetail() {
                 >
                   Mua ngay
                 </Button>
-               
               </Stack>
 
               {/* Shipping info */}
@@ -549,7 +577,7 @@ function BookDetail() {
               }}
             >
               <Tab label="Mô tả chi tiết" id="book-tab-0" />
-              <Tab label="Thông số kỹ thuật" id="book-tab-1" />
+              <Tab label="Thông tin sách" id="book-tab-1" />
             </Tabs>
 
             <TabPanel value={tabValue} index={0}>
@@ -604,8 +632,8 @@ function BookDetail() {
             Sách liên quan
           </Typography>
           <Grid container spacing={3}>
-            {[1, 2, 3, 4].map((item) => (
-              <Grid xs={12} sm={6} md={3} key={item}>
+            {relatedBooks.map((book) => (
+              <Grid xs={12} sm={6} md={3} key={book._id}>
                 <Paper
                   elevation={0}
                   variant="outlined"
@@ -634,8 +662,8 @@ function BookDetail() {
                   >
                     <Box
                       component="img"
-                      src="/placeholder.svg?height=180&width=120"
-                      alt="Related book"
+                      src={book.image}
+                      alt={book.title}
                       sx={{
                         maxWidth: "100%",
                         maxHeight: "100%",
@@ -657,31 +685,20 @@ function BookDetail() {
                         WebkitBoxOrient: "vertical",
                       }}
                     >
-                      {item === 1
-                        ? "The Pragmatic Programmer"
-                        : item === 2
-                          ? "Design Patterns"
-                          : item === 3
-                            ? "Refactoring"
-                            : "Code Complete"}
+                      {book.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {item === 1
-                        ? "David Thomas"
-                        : item === 2
-                          ? "Gang of Four"
-                          : item === 3
-                            ? "Martin Fowler"
-                            : "Steve McConnell"}
+                      {book.author}
                     </Typography>
                     <Typography variant="h6" sx={{ color: "#4caf50", fontWeight: "bold", mb: 1 }}>
-                      {formatPrice(item * 100000)}
+                      {formatPrice(book.price)}
                     </Typography>
                   </Box>
                   <Box sx={{ p: 2, pt: 0 }}>
                     <Button
                       fullWidth
                       variant="outlined"
+                      onClick={() => navigate(`/book-detail/${book._id}`)}
                       sx={{
                         borderColor: "#4caf50",
                         color: "#4caf50",

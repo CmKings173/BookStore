@@ -53,6 +53,7 @@ import EmailIcon from "@mui/icons-material/Email"
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline"
 import SupportIcon from "@mui/icons-material/Support"
 
+import { fetchOrderDetailAPI } from '~/apis'
 // Order status components with appropriate colors
 const OrderStatus = ({ status }) => {
   let color = "default"
@@ -106,7 +107,7 @@ const OrderStatus = ({ status }) => {
 }
 
 function OrderDetail() {
-  const { orderId } = useParams()
+  const { id } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [order, setOrder] = useState(null)
@@ -120,69 +121,45 @@ function OrderDetail() {
     severity: "success",
   })
 
-  // Mock order data
-  const mockOrder = {
-    id: "DH123456",
-    date: "2025-05-28",
-    total: 648000,
-    subtotal: 618000,
-    shipping: 30000,
-    status: "shipped",
-    paymentMethod: "COD",
-    items: [
-      {
-        id: "1",
-        title: "Clean Code",
-        author: "Robert C. Martin",
-        price: 299000,
-        quantity: 1,
-        image: "https://bizweb.dktcdn.net/thumb/grande/100/180/408/products/clean-code.jpg?v=1649847195810",
-      },
-      {
-        id: "2",
-        title: "The Pragmatic Programmer",
-        author: "David Thomas",
-        price: 349000,
-        quantity: 1,
-        image: "https://edwardthienhoang.wordpress.com/wp-content/uploads/2021/09/pracmatic-programmer.jpg",
-      },
-    ],
-    shippingAddress: {
-      name: "Nguyễn Văn A",
-      address: "123 Đường ABC, Phường 1, Quận 1",
-      city: "TP. Hồ Chí Minh",
-      phone: "0901234567",
-      email: "nguyenvana@example.com",
-    },
-    trackingNumber: "VN123456789",
-    estimatedDelivery: "2025-06-02",
-    timeline: [
-      {
-        status: "pending",
-        date: "2025-05-28T10:30:00",
-        description: "Đơn hàng đã được đặt thành công",
-      },
-      {
-        status: "processing",
-        date: "2025-05-28T14:45:00",
-        description: "Đơn hàng đã được xác nhận và đang được xử lý",
-      },
-      {
-        status: "shipped",
-        date: "2025-05-29T09:15:00",
-        description: "Đơn hàng đã được giao cho đơn vị vận chuyển",
-      },
-    ],
-  }
-
   useEffect(() => {
-    // Simulate API call
-    setLoading(true)
-    setTimeout(() => {
-      setOrder(mockOrder)
-      setLoading(false)
-    }, 1000)
-  }, [orderId])
+    const fetchOrderDetail = async () => {
+      try {
+        setLoading(true)
+        // Validate orderId format
+        if (!id) {
+          setSnackbar({
+            open: true,
+            message: "Mã đơn hàng không hợp lệ",
+            severity: "error"
+          })
+          setLoading(false)
+          return
+        }
+
+        const orderData = await fetchOrderDetailAPI(id)
+        if (orderData) {
+          setOrder(orderData)
+        } else {
+          setSnackbar({
+            open: true,
+            message: "Không thể tải thông tin đơn hàng",
+            severity: "error"
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error)
+        setSnackbar({
+          open: true,
+          message: error.message || "Có lỗi xảy ra khi tải thông tin đơn hàng",
+          severity: "error"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrderDetail()
+  }, [id])
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + " đ"
@@ -221,7 +198,7 @@ function OrderDetail() {
   }
 
   const handleContinueShopping = () => {
-    navigate("/bookstore")
+    navigate("/home")
   }
 
   const handleCancelOrder = () => {
@@ -373,10 +350,10 @@ function OrderDetail() {
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                 <Box>
                   <Typography variant="h5" fontWeight="600" gutterBottom>
-                    Đơn hàng #{order.id}
+                    Đơn hàng #{order._id}
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
-                    Đặt ngày {formatDate(order.date)}
+                    Đặt ngày {formatDate(order.createdAt)}
                   </Typography>
                 </Box>
                 <OrderStatus status={order.status} />
@@ -414,18 +391,18 @@ function OrderDetail() {
                     Địa chỉ giao hàng
                   </Typography>
                   <Typography variant="body1" fontWeight="500">
-                    {order.shippingAddress.name}
+                    {order.shippingInfo.fullName}
                   </Typography>
                   <Typography variant="body1">
-                    {order.shippingAddress.address}, {order.shippingAddress.city}
+                    {order.shippingInfo.street},{order.shippingInfo.ward},{order.shippingInfo.city}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
                     <LocalPhoneIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                    <Typography variant="body2">{order.shippingAddress.phone}</Typography>
+                    <Typography variant="body2">{order.shippingInfo.phone}</Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
                     <EmailIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                    <Typography variant="body2">{order.shippingAddress.email}</Typography>
+                    <Typography variant="body2">{order.shippingInfo.email}</Typography>
                   </Box>
                 </Grid>
 
@@ -440,7 +417,7 @@ function OrderDetail() {
                     </Typography>
                   </Box>
                   <Typography variant="body1">
-                    <strong>Mã vận đơn:</strong> {order.trackingNumber}
+                    <strong>Mã vận đơn:</strong> VN{order._id}
                   </Typography>
                   {order.status === "shipped" && (
                     <Typography variant="body1">
@@ -455,65 +432,6 @@ function OrderDetail() {
                 </Grid>
               </Grid>
 
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Lịch sử đơn hàng
-              </Typography>
-
-              <Timeline position="right" sx={{ p: 0, m: 0 }}>
-                {order.timeline.map((event, index) => (
-                  <TimelineItem key={index}>
-                    <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>
-                      {formatDateTime(event.date)}
-                    </TimelineOppositeContent>
-                    <TimelineSeparator>
-                      <TimelineDot
-                        color={
-                          event.status === "pending"
-                            ? "warning"
-                            : event.status === "processing"
-                              ? "info"
-                              : event.status === "shipped"
-                                ? "primary"
-                                : event.status === "delivered"
-                                  ? "success"
-                                  : "error"
-                        }
-                      >
-                        {event.status === "pending" ? (
-                          <ShoppingCartIcon fontSize="small" />
-                        ) : event.status === "processing" ? (
-                          <InventoryIcon fontSize="small" />
-                        ) : event.status === "shipped" ? (
-                          <LocalShippingIcon fontSize="small" />
-                        ) : event.status === "delivered" ? (
-                          <CheckCircleIcon fontSize="small" />
-                        ) : (
-                          <CancelIcon fontSize="small" />
-                        )}
-                      </TimelineDot>
-                      {index < order.timeline.length - 1 && <TimelineConnector />}
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Typography variant="body1" fontWeight="500">
-                        {event.status === "pending"
-                          ? "Đặt hàng thành công"
-                          : event.status === "processing"
-                            ? "Đang xử lý đơn hàng"
-                            : event.status === "shipped"
-                              ? "Đang giao hàng"
-                              : event.status === "delivered"
-                                ? "Đã giao hàng"
-                                : "Đã hủy đơn hàng"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {event.description}
-                      </Typography>
-                    </TimelineContent>
-                  </TimelineItem>
-                ))}
-              </Timeline>
             </Paper>
 
             {/* Order items */}
@@ -581,27 +499,27 @@ function OrderDetail() {
               </TableContainer>
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
-                <Box sx={{ width: { xs: "100%", sm: "50%", md: "40%" } }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                <Box sx={{ width: { xs: "100%", sm: "50%", md: "100%" } }}>
+                  {/* <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                     <Typography variant="body1">Tạm tính</Typography>
                     <Typography variant="body1">{formatPrice(order.subtotal)}</Typography>
                   </Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                     <Typography variant="body1">Phí vận chuyển</Typography>
                     <Typography variant="body1">{formatPrice(order.shipping)}</Typography>
-                  </Box>
-                  <Divider sx={{ my: 1 }} />
+                  </Box> */}
+                  {/* <Divider sx={{ my: 1 }} />
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                     <Typography variant="subtitle1" fontWeight="600">
                       Tổng cộng
                     </Typography>
                     <Typography variant="subtitle1" fontWeight="600" color="primary">
-                      {formatPrice(order.total)}
+                      {formatPrice(order.totalAmount)}
                     </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </Box> */}
+                  {/* <Typography variant="body2" color="text.secondary">
                     Phương thức thanh toán: {order.paymentMethod}
-                  </Typography>
+                  </Typography> */}
                 </Box>
               </Box>
             </Paper>
@@ -623,7 +541,7 @@ function OrderDetail() {
               >
                 Tiếp tục mua sắm
               </Button>
-              {order.status === "delivered" && (
+              {/* {order.status === "delivered" && (
                 <Button 
                   variant="outlined" 
                   startIcon={<RepeatIcon />} 
@@ -654,21 +572,7 @@ function OrderDetail() {
                 }}
               >
                 Tải hóa đơn
-              </Button>
-              {order.status === "shipped" && (
-                <Button
-                  variant="contained"
-                  startIcon={<LocalShippingIcon />}
-                  sx={{
-                    backgroundColor: "success.main",
-                    "&:hover": {
-                      backgroundColor: "success.dark",
-                    },
-                  }}
-                >
-                  Theo dõi đơn hàng
-                </Button>
-              )}
+              </Button> */}
               {order.status === "pending" && (
                 <Button 
                   variant="outlined" 
@@ -715,7 +619,7 @@ function OrderDetail() {
                     Mã đơn hàng
                   </Typography>
                   <Typography variant="body2" fontWeight="500">
-                    {order.id}
+                    DH{order._id}
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -723,7 +627,7 @@ function OrderDetail() {
                     Ngày đặt hàng
                   </Typography>
                   <Typography variant="body2" fontWeight="500">
-                    {formatDate(order.date)}
+                  {formatDate(order.createdAt)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -783,21 +687,15 @@ function OrderDetail() {
                     Tổng cộng
                   </Typography>
                   <Typography variant="subtitle1" fontWeight="600" color="primary">
-                    {formatPrice(order.total)}
+                    {formatPrice(order.totalAmount)}
                   </Typography>
                 </Box>
 
                 {/* Shipping Information */}
-                <Box sx={{ mt: 3 }}>
+                {/* <Box sx={{ mt: 3 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                     Thông tin giao hàng
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <LocalShippingIcon fontSize="small" sx={{ mr: 1, color: "primary.main" }} />
-                    <Typography variant="body2">
-                      {order.trackingNumber ? `Mã vận đơn: ${order.trackingNumber}` : "Chưa có mã vận đơn"}
-                    </Typography>
-                  </Box>
                   {order.status === "shipped" && order.estimatedDelivery && (
                     <Typography variant="body2" color="text.secondary">
                       Dự kiến giao hàng: {formatDate(order.estimatedDelivery)}
@@ -808,7 +706,7 @@ function OrderDetail() {
                       Đã giao hàng: {formatDate(order.deliveredDate)}
                     </Typography>
                   )}
-                </Box>
+                </Box> */}
 
                 {/* Contact Support */}
                 <Box sx={{ mt: 3 }}>
@@ -915,4 +813,4 @@ function OrderDetail() {
   )
 }
 
-export default OrderDetail
+export default OrderDetail 

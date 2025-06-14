@@ -201,10 +201,10 @@ const findCartByUserId = async (userid) => {
 const deleteUser = async (userId) => {
   try {
     const cart = await findCartByUserId(userId)
+    const result = await userModel.deleteOneById(userId)
     if (cart) {
       await cartModel.deleteOneById(cart._id)
     }
-    const result = await userModel.deleteOneById(userId)
     return result
   } catch (error) {
     throw error

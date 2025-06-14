@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import AppBar from "~/components/AppBar/AppBar"
@@ -42,7 +40,9 @@ import RepeatIcon from "@mui/icons-material/Repeat"
 import DownloadIcon from "@mui/icons-material/Download"
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline"
 import FilterListIcon from "@mui/icons-material/FilterList"
-
+import { toast } from 'react-toastify'
+import { fetchOrdersAPI } from '~/apis/client'
+import { updateOrderStatusAPI } from '~/apis';
 // Order status components with appropriate colors
 const OrderStatus = ({ status }) => {
   let color = "default"
@@ -55,12 +55,12 @@ const OrderStatus = ({ status }) => {
       icon = <ShoppingCartIcon fontSize="small" />
       label = "Chờ xác nhận"
       break
-    case "processing":
+    case "confirmed":
       color = "info"
       icon = <LocalShippingIcon fontSize="small" />
       label = "Đang xử lý"
       break
-    case "shipped":
+    case "shipping":
       color = "primary"
       icon = <LocalShippingIcon fontSize="small" />
       label = "Đang giao hàng"
@@ -107,170 +107,44 @@ function OrderHistory() {
   const [page, setPage] = useState(1)
   const ordersPerPage = 5
 
-  // Mock order data
-  const mockOrders = [
-    {
-      id: "DH123456",
-      date: "2025-05-28",
-      total: 648000,
-      status: "delivered",
-      paymentMethod: "COD",
-      items: [
-        {
-          id: "1",
-          title: "Clean Code",
-          author: "Robert C. Martin",
-          price: 299000,
-          quantity: 1,
-          image: "https://bizweb.dktcdn.net/thumb/grande/100/180/408/products/clean-code.jpg?v=1649847195810",
-        },
-        {
-          id: "2",
-          title: "The Pragmatic Programmer",
-          author: "David Thomas",
-          price: 349000,
-          quantity: 1,
-          image: "https://edwardthienhoang.wordpress.com/wp-content/uploads/2021/09/pracmatic-programmer.jpg",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-      deliveredDate: "2025-05-30",
-    },
-    {
-      id: "DH123457",
-      date: "2025-05-20",
-      total: 299000,
-      status: "shipped",
-      paymentMethod: "Banking",
-      items: [
-        {
-          id: "3",
-          title: "JavaScript: The Good Parts",
-          author: "Douglas Crockford",
-          price: 299000,
-          quantity: 1,
-          image: "https://m.media-amazon.com/images/I/41w+nN8Kg0L._SY445_SX342_.jpg",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-      estimatedDelivery: "2025-06-02",
-    },
-    {
-      id: "DH123458",
-      date: "2025-05-15",
-      total: 400000,
-      status: "cancelled",
-      paymentMethod: "Credit Card",
-      items: [
-        {
-          id: "4",
-          title: "Design Patterns",
-          author: "Gang of Four",
-          price: 400000,
-          quantity: 1,
-          image: "https://m.media-amazon.com/images/I/81IGFC6oFmL.jpg",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-      cancelReason: "Đổi ý không muốn mua nữa",
-      cancelDate: "2025-05-16",
-    },
-    {
-      id: "DH123459",
-      date: "2025-05-10",
-      total: 598000,
-      status: "delivered",
-      paymentMethod: "MoMo",
-      items: [
-        {
-          id: "1",
-          title: "Clean Code",
-          author: "Robert C. Martin",
-          price: 299000,
-          quantity: 2,
-          image: "https://bizweb.dktcdn.net/thumb/grande/100/180/408/products/clean-code.jpg?v=1649847195810",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-      deliveredDate: "2025-05-13",
-    },
-    {
-      id: "DH123460",
-      date: "2025-04-25",
-      total: 349000,
-      status: "delivered",
-      paymentMethod: "COD",
-      items: [
-        {
-          id: "2",
-          title: "The Pragmatic Programmer",
-          author: "David Thomas",
-          price: 349000,
-          quantity: 1,
-          image: "https://edwardthienhoang.wordpress.com/wp-content/uploads/2021/09/pracmatic-programmer.jpg",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-      deliveredDate: "2025-04-28",
-    },
-    {
-      id: "DH123461",
-      date: "2025-04-15",
-      total: 299000,
-      status: "pending",
-      paymentMethod: "Banking",
-      items: [
-        {
-          id: "3",
-          title: "JavaScript: The Good Parts",
-          author: "Douglas Crockford",
-          price: 299000,
-          quantity: 1,
-          image: "https://m.media-amazon.com/images/I/41w+nN8Kg0L._SY445_SX342_.jpg",
-        },
-      ],
-      shippingAddress: {
-        name: "Nguyễn Văn A",
-        address: "123 Đường ABC, Phường 1, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        phone: "0901234567",
-      },
-    },
-  ]
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const response = await fetchOrdersAPI()
+      if (response) {
+        const formattedOrders = response.map(order => ({
+          id: order._id,
+          date: order.createdAt,
+          total: order.totalAmount,
+          status: order.status,
+          paymentMethod: order.paymentMethod,
+          items: order.items.map(item => ({
+            id: item.bookId,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          })),
+          shippingInfo: {
+            name: order.shippingInfo.fullName,
+            address: `${order.shippingInfo.street}, ${order.shippingInfo.ward}, ${order.shippingInfo.district}`,
+            city: order.shippingInfo.city,
+            phone: order.shippingInfo.phone,
+            email: order.shippingInfo.email
+          }
+        }))
+        setOrders(formattedOrders)
+        setFilteredOrders(formattedOrders)
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Simulate API call
-    setLoading(true)
-    setTimeout(() => {
-      setOrders(mockOrders)
-      setFilteredOrders(mockOrders)
-      setLoading(false)
-    }, 1000)
+    fetchOrders()
   }, [])
 
   useEffect(() => {
@@ -280,7 +154,7 @@ function OrderHistory() {
     // Filter by tab (status)
     if (tabValue === 1) filtered = filtered.filter((order) => order.status === "pending")
     else if (tabValue === 2)
-      filtered = filtered.filter((order) => order.status === "processing" || order.status === "shipped")
+      filtered = filtered.filter((order) => order.status === "confirmed" || order.status === "shipping")
     else if (tabValue === 3) filtered = filtered.filter((order) => order.status === "delivered")
     else if (tabValue === 4) filtered = filtered.filter((order) => order.status === "cancelled")
 
@@ -318,6 +192,18 @@ function OrderHistory() {
     setPage(1) // Reset to first page when filters change
   }, [orders, tabValue, searchTerm, timeFilter, statusFilter])
 
+
+  const handleCancelOrder = (order) => {
+    updateOrderStatusAPI(order.id, 'cancelled')
+      .then(() => {
+        toast.success('Hủy đơn thành công')
+        fetchOrders()
+      })
+      .catch((error) => {
+        toast.error('Không thể hủy đơn')
+      })
+  }
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue)
   }
@@ -339,7 +225,7 @@ function OrderHistory() {
   }
 
   const handleViewOrderDetails = (orderId) => {
-    navigate(`/account/orders/${orderId}`)
+    navigate(`/account/order-detail/${orderId}`)
   }
 
   const handleReorder = (orderId) => {
@@ -460,7 +346,7 @@ function OrderHistory() {
               </Grid>
               <Grid xs={12} md={6}>
                 <Grid container spacing={2}>
-                  <Grid xs={6}>
+                  {/* <Grid xs={6}>
                     <FormControl fullWidth size="small">
                       <InputLabel id="time-filter-label">Thời gian</InputLabel>
                       <Select
@@ -476,7 +362,7 @@ function OrderHistory() {
                         <MenuItem value="6months">6 tháng gần đây</MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
+                  </Grid> */}
                   <Grid xs={6}>
                     <FormControl fullWidth size="small">
                       <InputLabel id="status-filter-label">Trạng thái</InputLabel>
@@ -489,10 +375,10 @@ function OrderHistory() {
                       >
                         <MenuItem value="all">Tất cả trạng thái</MenuItem>
                         <MenuItem value="pending">Chờ xác nhận</MenuItem>
-                        <MenuItem value="processing">Đang xử lý</MenuItem>
-                        <MenuItem value="shipped">Đang giao hàng</MenuItem>
+                        <MenuItem value="confirmed">Đang xử lý</MenuItem>
+                        <MenuItem value="shipping">Đang giao hàng</MenuItem>
                         <MenuItem value="delivered">Đã giao hàng</MenuItem>
-                        {/* <MenuItem value="cancelled">Đã hủy</MenuItem> */}
+                        <MenuItem value="cancelled">Đã hủy</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -515,8 +401,8 @@ function OrderHistory() {
             }}
           >
             <Box
-              component="img"
-              src="/placeholder.svg?height=120&width=120"
+              // component="img"
+              // src="/placeholder.svg?height=120&width=120"
               alt="No orders"
               sx={{ height: 120, width: 120, mb: 2, opacity: 0.7 }}
             />
@@ -531,7 +417,7 @@ function OrderHistory() {
             <Button
               variant="contained"
               startIcon={<ShoppingCartIcon />}
-              onClick={() => navigate("/bookstore")}
+              onClick={() => navigate("/home")}
               sx={{
                 mt: 2,
                 backgroundColor: "#4caf50",
@@ -598,7 +484,7 @@ function OrderHistory() {
                 <Box sx={{ p: 3 }}>
                   <Grid container spacing={2}>
                     {/* Order items preview (show first 2 items) */}
-                    {order.items.slice(0, 2).map((item) => (
+                    {order.items.map((item) => (
                       <Grid xs={12} key={item.id}>
                         <Box sx={{ display: "flex", gap: 2 }}>
                           <Box
@@ -618,9 +504,6 @@ function OrderHistory() {
                             <Typography variant="body1" fontWeight="500">
                               {item.title}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {item.author}
-                            </Typography>
                             <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
                               <Typography variant="body2">
                                 {formatPrice(item.price)} x {item.quantity}
@@ -631,20 +514,20 @@ function OrderHistory() {
                             </Box>
                           </Box>
                         </Box>
-                        {item !== order.items[order.items.length - 1] && item !== order.items[1] && (
+                        {/* {item !== order.items[order.items.length - 1] && item !== order.items[1] && (
                           <Divider sx={{ my: 2 }} />
-                        )}
+                        )} */}
                       </Grid>
                     ))}
 
-                    {/* Show message if there are more items */}
+                    {/* Show message if there are more items
                     {order.items.length > 2 && (
                       <Grid xs={12}>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                           + {order.items.length - 2} sản phẩm khác
                         </Typography>
                       </Grid>
-                    )}
+                    )} */}
 
                     {/* Order actions */}
                     <Grid xs={12}>
@@ -666,7 +549,7 @@ function OrderHistory() {
                         >
                           Chi tiết
                         </Button>
-                        {order.status === "delivered" && (
+                        {/* {order.status === "delivered" && (
                           <Button
                             variant="outlined"
                             size="small"
@@ -675,22 +558,22 @@ function OrderHistory() {
                           >
                             Mua lại
                           </Button>
-                        )}
-                        <Button
+                        )} */}
+                        {/* <Button
                           variant="outlined"
                           size="small"
                           startIcon={<DownloadIcon />}
                           onClick={() => handleDownloadInvoice(order.id)}
                         >
                           Hóa đơn
-                        </Button>
-                        {order.status === "shipped" && (
-                          <Button variant="outlined" size="small" startIcon={<LocalShippingIcon />}>
-                            Theo dõi
-                          </Button>
-                        )}
+                        </Button> */}
                         {order.status === "pending" && (
-                          <Button variant="outlined" size="small" color="error">
+                          <Button 
+                            variant="outlined" 
+                            size="small" 
+                            color="error"
+                            onClick={() => handleCancelOrder(order)}
+                          >
                             Hủy đơn
                           </Button>
                         )}

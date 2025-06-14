@@ -9,6 +9,7 @@ import { userModel } from '~/models/userModel'
 const isAuthorized = async (req, res, next) => {
   // Lấy accessToken nằm trong request cookies phia client - withCredentials trong file authorizeAxios và Credentials trong CORS
   const clientAccessToken = req.cookies?.accessToken
+  // console.log('clientAccessToken: ', clientAccessToken)
   // Nếu clientAccessToken không tồn tại => trả về lỗi
   if (!clientAccessToken) {
     next(new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized! (Token not found)'))

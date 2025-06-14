@@ -70,13 +70,12 @@ const deleteBook = async (bookId) => {
 }
 
 // Lấy tất cả sách và tên category tương ứng
-const getAllBooks = async (page, itemsPerPage, filterCategoryId = null, searchTerm = '') => {
+const getAllBooks = async (page, itemsPerPage, filterCategoryId = null, searchTerm = '', filterType = null) => {
   try {
     // Tạo stage $match động
     const matchStage = { _destroy: false }
 
     if (filterCategoryId) {
-      // Chuyển đổi categoryId thành ObjectId
       matchStage.categoryId = new ObjectId(filterCategoryId)
     }
 
@@ -93,10 +92,14 @@ const getAllBooks = async (page, itemsPerPage, filterCategoryId = null, searchTe
       { $match: matchStage }
     ]
 
-    // Pipeline chính để lấy dữ liệu sách
+    let sortStage = { title: 1 } // Default sort
+
+    if (filterType === 'new') {
+      sortStage = { createdAt: -1 } // Sort by creation date descending for new arrivals
+    }
+
     const dataPipeline = [
       { $match: matchStage },
-      // Chuyển categoryId từ string sang ObjectId để lookup hoạt động
       {
         $addFields: {
           categoryIdObject: { $toObjectId: '$categoryId' }
@@ -136,7 +139,7 @@ const getAllBooks = async (page, itemsPerPage, filterCategoryId = null, searchTe
           'category.name': 1
         }
       },
-      { $sort: { title: 1 } },
+      { $sort: sortStage }, // Use dynamic sortStage
       { $skip: pagingSkipValue(page, itemsPerPage) },
       { $limit: itemsPerPage }
     ]
@@ -178,6 +181,10 @@ const updateBook = async (bookId, updateData) => {
     // Convert từ string sang ObjectId
     if (updateData.categoryId) {
       updateData.categoryId = new ObjectId(updateData.categoryId)
+    }
+    // If originalPrice is updated, ensure it's a number
+    if (updateData.originalPrice !== undefined) {
+      updateData.originalPrice = Number(updateData.originalPrice);
     }
 
     const result = await GET_DB()
@@ -268,12 +275,12 @@ const searchBooks = async (searchTerm, page, itemsPerPage, filterCategoryId = nu
     ])
 
     // Log để debug
-    console.log('Search Result:', {
-      searchTerm,
-      totalBooks: totalCount,
-      booksCount: books.length,
-      firstBook: books[0]
-    })
+    // console.log('Search Result:', {
+    //   searchTerm,
+    //   totalBooks: totalCount,
+    //   booksCount: books.length,
+    //   firstBook: books[0]
+    // })
 
     return {
       books: books || [],
@@ -285,6 +292,74 @@ const searchBooks = async (searchTerm, page, itemsPerPage, filterCategoryId = nu
   }
 }
 
+// Lấy sách liên quan
+const getRelatedBooks = async (categoryId, currentBookId, limit = 4) => {
+  try {
+    // Tạo stage $match động
+    const matchStage = {
+      _destroy: false,
+      categoryId: new ObjectId(categoryId)
+    }
+
+    // Loại bỏ sách hiện tại khỏi kết quả
+    if (currentBookId) {
+      matchStage._id = { $ne: new ObjectId(currentBookId) }
+    }
+
+    // Pipeline để lấy dữ liệu sách
+    const dataPipeline = [
+      { $match: matchStage },
+      {
+        $addFields: {
+          categoryIdObject: { $toObjectId: '$categoryId' }
+        }
+      },
+      {
+        $lookup: {
+          from: categoryModel.CATEGORY_COLLECTION_NAME,
+          localField: 'categoryIdObject',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      { $unwind: '$category' },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          slug: 1,
+          author: 1,
+          subtitle: 1,
+          publisher: 1,
+          publishYear: 1,
+          pages: 1,
+          format: 1,
+          dimensions: 1,
+          description: 1,
+          weight: 1,
+          price: 1,
+          stock: 1,
+          image: 1,
+          inStock: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          categoryId: 1,
+          'category._id': 1,
+          'category.name': 1
+        }
+      },
+      { $sort: { createdAt: -1 } }, // Sắp xếp theo thời gian tạo mới nhất
+      { $limit: limit }
+    ]
+
+    const books = await GET_DB().collection(BOOK_COLLECTION_NAME).aggregate(dataPipeline).toArray()
+
+    return books || []
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const bookModel = {
   BOOK_COLLECTION_NAME,
   BOOK_COLLECTION_SCHEMA,
@@ -293,5 +368,6 @@ export const bookModel = {
   deleteBook,
   getAllBooks,
   updateBook,
-  searchBooks
+  searchBooks,
+  getRelatedBooks
 }

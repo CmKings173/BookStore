@@ -24,5 +24,12 @@ export const fetchUsersAPI = async (searchPath) => {
 
 export const deleteUserAPI = async (userId) => {
   const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/users/delete/${userId}`)
+  toast.success("xoá tài khoản thành công")
   return response.data
 }
+
+export const getAllOrdersAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/orders/getAllOrders`)
+  return response.data
+}
+

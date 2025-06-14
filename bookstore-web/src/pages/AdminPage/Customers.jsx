@@ -44,8 +44,6 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import BlockIcon from "@mui/icons-material/Block"
 import FilterListIcon from "@mui/icons-material/FilterList"
-import RefreshIcon from "@mui/icons-material/Refresh"
-import FileDownloadIcon from "@mui/icons-material/FileDownload"
 import MoreVertIcon from "@mui/icons-material/MoreVert"
 import EmailIcon from "@mui/icons-material/Email"
 import PhoneIcon from "@mui/icons-material/Phone"
@@ -192,7 +190,6 @@ const Customers = () => {
   const handleDeleteConfirm = async () => {
     try {
       await deleteUserAPI(userToDelete._id)
-      toast.success('Xóa sách thành công!')
       setDeleteDialogOpen(false)
       setUserToDelete(null)
       // Fetch lại danh sách sách
@@ -235,11 +232,12 @@ const Customers = () => {
             color: theme.palette.text.primary,
             borderLeft: `4px solid ${theme.palette.primary.main}`,
             paddingLeft: 2,
+            color:'black'
           }}
         >
           Quản lý người dùng
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" color="black">
           Quản lý thông tin và quyền hạn của tất cả người dùng trong hệ thống
         </Typography>
       </Box>
@@ -575,7 +573,7 @@ const Customers = () => {
                       </Box>
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Xem chi tiết">
+                      {/* <Tooltip title="Xem chi tiết">
                         <IconButton 
                           size="small" 
                           onClick={() => handleViewUser(user)}
@@ -590,7 +588,7 @@ const Customers = () => {
                         >
                           <MoreVertIcon fontSize="small" />
                         </IconButton>
-                      </Tooltip>
+                      </Tooltip> */}
                       <Tooltip title="Chỉnh sửa">
                         <IconButton 
                           size="small"
@@ -644,7 +642,7 @@ const Customers = () => {
       </Card>
 
       {/* User Detail Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      {/* <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar 
@@ -741,14 +739,14 @@ const Customers = () => {
               </Box>
             )} */}
 
-        </DialogContent>
+        {/* </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Đóng</Button>
           <Button variant="contained" startIcon={<EditIcon />}>
             Chỉnh sửa
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */} 
 
       <DeleteUserDialog
         open={deleteDialogOpen}

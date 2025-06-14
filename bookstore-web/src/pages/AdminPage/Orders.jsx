@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Typography,
@@ -33,72 +31,29 @@ import {
 import SearchIcon from "@mui/icons-material/Search"
 import VisibilityIcon from "@mui/icons-material/Visibility"
 import LocalShippingIcon from "@mui/icons-material/LocalShipping"
-import RefreshIcon from "@mui/icons-material/Refresh"
-import FileDownloadIcon from "@mui/icons-material/FileDownload"
+// import RefreshIcon from "@mui/icons-material/Refresh"
+// import FileDownloadIcon from "@mui/icons-material/FileDownload"
 import FilterListIcon from "@mui/icons-material/FilterList"
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined"
 import CancelIcon from "@mui/icons-material/Cancel"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
-
-const orders = [
-  {
-    id: "#3102",
-    customer: "Nguyễn Văn A",
-    email: "nguyenvana@email.com",
-    date: "23/06/2024",
-    total: 320000,
-    status: "Đã giao",
-    items: 2,
-  },
-  {
-    id: "#3101",
-    customer: "Trần Thị B",
-    email: "tranthib@email.com",
-    date: "22/06/2024",
-    total: 150000,
-    status: "Đang giao",
-    items: 1,
-  },
-  {
-    id: "#3100",
-    customer: "Lê Văn C",
-    email: "levanc@email.com",
-    date: "21/06/2024",
-    total: 480000,
-    status: "Đang xử lý",
-    items: 3,
-  },
-  {
-    id: "#3099",
-    customer: "Phạm Thị D",
-    email: "phamthid@email.com",
-    date: "20/06/2024",
-    total: 95000,
-    status: "Đã hủy",
-    items: 1,
-  },
-  {
-    id: "#3098",
-    customer: "Hoàng Văn E",
-    email: "hoangvane@email.com",
-    date: "19/06/2024",
-    total: 275000,
-    status: "Đã giao",
-    items: 2,
-  },
-]
+import { getAllOrdersAPI } from '~/apis/admin'
+import OrderDetailModal from './components/OrderDetailModal'
+import OrderUpdateModal from './components/OrderUpdateModal'
 
 const getStatusColor = (status) => {
   switch (status) {
-    case "Đã giao":
+    case "delivered":
       return "success"
-    case "Đang giao":
+    case "shipping":
       return "primary"
-    case "Đang xử lý":
+    case "confirmed":
+      return "info"
+    case "pending":
       return "warning"
-    case "Đã hủy":
+    case "cancelled":
       return "error"
     default:
       return "default"
@@ -107,43 +62,88 @@ const getStatusColor = (status) => {
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case "Đã giao":
+    case "delivered":
       return <CheckCircleIcon fontSize="small" />
-    case "Đang giao":
+    case "shipping":
       return <LocalShippingOutlinedIcon fontSize="small" />
-    case "Đang xử lý":
+    case "confirmed":
       return <ShoppingCartIcon fontSize="small" />
-    case "Đã hủy":
+    case "cancelled":
       return <CancelIcon fontSize="small" />
     default:
       return null
   }
 }
 
-function Orders () {
+function Orders() {
   const theme = useTheme()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedOrderId, setSelectedOrderId] = useState(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
+  // const [page, setPage] = useState(0)
+  // const [rowsPerPage, setRowsPerPage] = useState(5)
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const data = await getAllOrdersAPI()
+        setOrders(data)
+      } catch (error) {
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [])
 
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value)
   }
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage)
-  }
+  // const handleChangePage = (event, newPage) => {
+  //   setPage(newPage)
+  // }
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+  // const handleChangeRowsPerPage = (event) => {
+  //   setRowsPerPage(parseInt(event.target.value, 10))
+  //   setPage(0)
+  // }
+
+  const handleViewOrderDetails = (orderId) => {
+    setSelectedOrderId(orderId);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleUpdateOrder = (order) => {
+    setSelectedOrder(order);
+    setIsUpdateModalOpen(true);
+  };
+
+  const handleUpdateSuccess = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllOrdersAPI();
+      setOrders(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase())
+      order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.shippingInfo.fullName.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = statusFilter === "" || order.status === statusFilter
 
@@ -153,11 +153,12 @@ function Orders () {
   // Tính toán số lượng đơn hàng theo trạng thái
   const orderStats = {
     total: orders.length,
-    completed: orders.filter(order => order.status === "Đã giao").length,
-    processing: orders.filter(order => order.status === "Đang xử lý").length,
-    shipping: orders.filter(order => order.status === "Đang giao").length,
-    cancelled: orders.filter(order => order.status === "Đã hủy").length,
-    totalRevenue: orders.reduce((sum, order) => sum + order.total, 0)
+    delivered: orders.filter(order => order.status === "delivered").length,
+    confirmed: orders.filter(order => order.status === "confirmed").length,
+    pending: orders.filter(order => order.status === "pending").length,
+    shipping: orders.filter(order => order.status === "shipping").length,
+    cancelled: orders.filter(order => order.status === "cancelled").length,
+    totalRevenue: orders.reduce((sum, order) => sum + order.totalAmount, 0)
   }
 
   return (
@@ -240,7 +241,7 @@ function Orders () {
                     Đã giao
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="success.main">
-                    {orderStats.completed}
+                    {orderStats.delivered}
                   </Typography>
                 </Box>
                 <Avatar 
@@ -273,10 +274,10 @@ function Orders () {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Đang xử lý
+                    Chờ xác nhận
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="warning.main">
-                    {orderStats.processing}
+                    {orderStats?.pending || 0 }
                   </Typography>
                 </Box>
                 <Avatar 
@@ -381,10 +382,11 @@ function Orders () {
                   sx={{ borderRadius: "8px" }}
                 >
                   <MenuItem value="">Tất cả</MenuItem>
-                  <MenuItem value="Đã giao">Đã giao</MenuItem>
-                  <MenuItem value="Đang giao">Đang giao</MenuItem>
-                  <MenuItem value="Đang xử lý">Đang xử lý</MenuItem>
-                  <MenuItem value="Đã hủy">Đã hủy</MenuItem>
+                  <MenuItem value="delivered">Đã giao</MenuItem>
+                  <MenuItem value="shipping">Đang giao</MenuItem>
+                  <MenuItem value="confirmed">Đang xử lý</MenuItem>
+                  <MenuItem value="pending">Chờ xác nhận</MenuItem>
+                  <MenuItem value="cancelled">Đã hủy</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -407,7 +409,7 @@ function Orders () {
               <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
                 <TableCell sx={{ fontWeight: 'bold' }}>Mã đơn hàng</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Khách hàng</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Số điện thoại</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Ngày đặt</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Số sản phẩm</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Tổng tiền</TableCell>
@@ -417,7 +419,7 @@ function Orders () {
             </TableHead>
             <TableBody>
               {filteredOrders
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                // .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((order, index) => (
                 <TableRow 
                   key={order.id} 
@@ -429,14 +431,14 @@ function Orders () {
                   }}
                 >
                   <TableCell component="th" scope="row" sx={{ fontWeight: 'medium', color: theme.palette.primary.main }}>
-                    {order.id}
+                    {order._id}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'medium' }}>{order.customer}</TableCell>
-                  <TableCell>{order.email}</TableCell>
-                  <TableCell>{order.date}</TableCell>
+                  <TableCell sx={{ fontWeight: 'medium' }}>{order.shippingInfo.fullName}</TableCell>
+                  <TableCell>{order.shippingInfo.phone}</TableCell>
+                  <TableCell>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</TableCell>
                   <TableCell>
                     <Chip 
-                      label={`${order.items} cuốn`} 
+                      label={`${order.items.length} cuốn`} 
                       size="small" 
                       sx={{ 
                         bgcolor: alpha(theme.palette.info.main, 0.1),
@@ -446,7 +448,7 @@ function Orders () {
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 'medium', color: theme.palette.success.main }}>
-                    {order.total.toLocaleString("vi-VN")}₫
+                    {order.totalAmount.toLocaleString("vi-VN")}₫
                   </TableCell>
                   <TableCell>
                     <Chip 
@@ -461,6 +463,7 @@ function Orders () {
                     <Tooltip title="Xem chi tiết">
                       <IconButton 
                         size="small" 
+                        onClick={() => handleViewOrderDetails(order._id)}
                         sx={{ 
                           color: theme.palette.info.main,
                           bgcolor: alpha(theme.palette.info.main, 0.1),
@@ -473,9 +476,10 @@ function Orders () {
                         <VisibilityIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Cập nhật vận chuyển">
+                    <Tooltip title="Cập nhật trạng thái">
                       <IconButton 
                         size="small"
+                        onClick={() => handleUpdateOrder(order)}
                         sx={{ 
                           color: theme.palette.success.main,
                           bgcolor: alpha(theme.palette.success.main, 0.1),
@@ -507,19 +511,22 @@ function Orders () {
             </TableBody>
           </Table>
         </TableContainer>
-        
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredOrders.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Số dòng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
-        />
       </Card>
+
+      {/* Add OrderDetailModal */}
+      <OrderDetailModal
+        open={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        orderId={selectedOrderId}
+      />
+
+      {/* Add OrderUpdateModal */}
+      <OrderUpdateModal
+        open={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        order={selectedOrder}
+        onUpdateSuccess={handleUpdateSuccess}
+      />
     </Box>
   )
 }

@@ -20,13 +20,15 @@ import Chip from "@mui/material/Chip"
 import Pagination from "@mui/material/Pagination"
 // import PaginationItem from "@mui/material/PaginationItem"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { styled } from "@mui/material/styles"
+import { styled, useTheme, alpha } from "@mui/material/styles"
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
 import VisibilityIcon from "@mui/icons-material/Visibility"
 import {DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE} from '~/utils/constants'
 import Footer from "~/components/Footer/Footer"
 import { fetchBooksAPI, fetchCategoriesAPI, searchBooksAPI } from '~/apis/index'
 import CircularProgress from "@mui/material/CircularProgress"
+import HistoryIcon from '@mui/icons-material/History'
+import ButtonGroup from '@mui/material/ButtonGroup'
 
 
 const SidebarItem = styled(Box)(({ theme }) => ({
@@ -57,6 +59,7 @@ function HomePage() {
   const query = new URLSearchParams(location.search)
   const page = Number.parseInt(query.get("page") || "1", 10)
   const navigate = useNavigate()
+  const theme = useTheme()
 
   useEffect(() => {
     fetchCategoriesAPI()
@@ -78,11 +81,11 @@ function HomePage() {
       try {
         const query = new URLSearchParams(location.search)
         const categorySlug = query.get('category')
-const searchParam = query.get('search')
-setSearchQuery(searchParam || "")
-setSearchQuery(searchParam || "")
-setSearchQuery(searchParam || "")
-        
+        const searchParam = query.get('search')
+        setSearchQuery(searchParam || "")
+        setSearchQuery(searchParam || "")
+        setSearchQuery(searchParam || "")
+                
         let categoryId = "all"
         if (categorySlug) {
           const category = categories.find(c => 
@@ -157,7 +160,7 @@ setSearchQuery(searchParam || "")
       <Box sx={{ paddingX: 2, my: 4 }}>
         <Grid container spacing={3}>
            {/* Sidebar - Danh mục sách */}
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={3} sx={{ display: { xs: 'none', sm: 'block' } }}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2, color: "primary.main" }}>
               📚 Danh mục sách
             </Typography>
@@ -174,7 +177,7 @@ setSearchQuery(searchParam || "")
                   <Typography variant="body2">Tất cả sách</Typography>
                 </Box>
               </SidebarItem>
-              {/* {console.log('Rendering categories:', categories)} */}
+
               {categories.map((category) => (
                 <SidebarItem
                   key={category._id}
@@ -192,11 +195,11 @@ setSearchQuery(searchParam || "")
             <Divider sx={{ my: 2 }} />
 
             {/* Bộ lọc bổ sung */}
-            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2, color: "primary.main" }}>
+            {/* <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2, color: "primary.main" }}>
               🔍 Bộ lọc
-            </Typography>
-
-            <Stack direction="column" spacing={1}>
+            </Typography> */}
+            
+            {/* <Stack direction="column" spacing={1}>
               <SidebarItem>
                 <StarIcon fontSize="small" />
                 Sách bán chạy
@@ -209,12 +212,54 @@ setSearchQuery(searchParam || "")
                 <MenuBookIcon fontSize="small" />
                 Sách mới
               </SidebarItem>
-            </Stack>
+            </Stack> */}
+               {/* Lịch sử đơn hàng */}
+              <SidebarItem
+                onClick={() => navigate('/account/orders')}
+              >
+                <HistoryIcon fontSize="small" />
+                <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                  <Typography variant="body2">Lịch sử đơn hàng</Typography>
+                </Box>
+              </SidebarItem>
+
           </Grid>
            
           {/* Main Content - Danh sách book*/}
           <Grid xs={12} sm={9}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+            {/* Tabs for mobile (Sách Mới Nổi Bật, Sách Khuyến Mãi) */}
+            <Box sx={{
+              display: { xs: 'flex', sm: 'none' },
+              justifyContent: 'center',
+              mb: 3
+            }}>
+              <ButtonGroup variant="outlined" aria-label="outlined button group" size="small">
+                <Button
+                  sx={{
+                    color: theme.palette.primary.main,
+                    borderColor: theme.palette.primary.main,
+                    '&:hover': {
+                      borderColor: theme.palette.primary.main,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05)
+                    }
+                  }}
+                >Sách Mới Nổi Bật</Button>
+                <Button
+                  sx={{
+                    color: theme.palette.primary.main,
+                    borderColor: theme.palette.primary.main,
+                    '&:hover': {
+                      borderColor: theme.palette.primary.main,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05)
+                    }
+                  }}
+                >Sách Khuyến Mãi</Button>
+              </ButtonGroup>
+            </Box>
+            
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: { xs: 'flex-start', sm: 'center' }, mb: 3,
+              width: "100%"
+            }}>
               <Typography variant="h4" sx={{ fontWeight: "bold" }}>
                 {searchQuery 
                   ? `Kết quả tìm kiếm cho "${searchQuery}"`
@@ -401,7 +446,7 @@ setSearchQuery(searchParam || "")
                           >
                             Xem chi tiết
                           </Button>
-                          <Button
+                          {/* <Button
                             size="small"
                             variant="contained"
                             startIcon={<ShoppingCartIcon />}
@@ -415,7 +460,7 @@ setSearchQuery(searchParam || "")
                             }}
                           >
                             {book.inStock ? "Thêm vào giỏ" : "Hết hàng"}
-                          </Button>
+                          </Button> */}
                         </CardActions>
                       </Card>
                     </Box>
@@ -430,20 +475,20 @@ setSearchQuery(searchParam || "")
                   count={Math.ceil(totalBooks / DEFAULT_ITEMS_PER_PAGE)}
                   page={page}
                   onChange={(e, value) => {
-                    const categoryName = selectedCategory === "all" ? "" : 
-                      categories.find(c => c._id === selectedCategory)?.name
+                    // Lấy categorySlug trực tiếp từ URL hiện tại
+                    const currentCategorySlug = new URLSearchParams(location.search).get('category') || "";
                     
                     let newUrl = `/home`
-                    if (value !== 1 || categoryName || searchQuery) {
+                    if (value !== 1 || currentCategorySlug || searchQuery) {
                       newUrl += '?'
                       if (value !== 1) {
                         newUrl += `page=${value}`
                       }
-                      if (categoryName) {
-                        newUrl += `${value !== 1 ? '&' : ''}category=${categoryName}`
+                      if (currentCategorySlug) {
+                        newUrl += `${value !== 1 ? '&' : ''}category=${currentCategorySlug}`
                       }
                       if (searchQuery) {
-                        newUrl += `${value !== 1 || categoryName ? '&' : ''}search=${searchQuery}`
+                        newUrl += `${value !== 1 || currentCategorySlug ? '&' : ''}search=${searchQuery}`
                       }
                     }
                     navigate(newUrl)

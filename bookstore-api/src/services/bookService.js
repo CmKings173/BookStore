@@ -105,13 +105,23 @@ const searchBooks = async (searchTerm, page, itemsPerPage, categoryId = null) =>
   } catch (error) { throw error }
 }
 
-const bookService = {
+const getRelatedBooks = async (categoryId, currentBookId, limit = 4) => {
+  try {
+    if (!categoryId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Category ID is required')
+    }
+
+    const results = await bookModel.getRelatedBooks(categoryId, currentBookId, limit)
+    return results
+  } catch (error) { throw error }
+}
+
+export const bookService = {
   createNew,
   getDetails,
   deleteBook,
   getAllBooks,
   updateBook,
-  searchBooks
+  searchBooks,
+  getRelatedBooks
 }
-
-export { bookService }

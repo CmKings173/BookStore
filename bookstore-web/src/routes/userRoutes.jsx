@@ -4,7 +4,7 @@ import Cart from '~/pages/UserPage/Cart'
 import BookDetail from '~/pages/UserPage/BookDetail'
 import Checkout from '~/pages/UserPage/Checkout'
 import OrderSuccessPage from '~/pages/UserPage/OrderSuccess'
-import OrderHistory from '~/pages/UserPage/Order'
+import OrderHistory from '~/pages/UserPage/OrderHistory'
 import OrderDetail from '~/pages/UserPage/OrderDetail'
 import Settings from '~/pages/Settings/Settings'
 

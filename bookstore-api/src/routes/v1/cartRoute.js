@@ -1,13 +1,30 @@
 import express from 'express'
-// import { bookValidation } from '~/validations/bookValidation'
 import { cartController } from '~/controllers/cartController'
 import { authMiddleware } from '~/middlewares/authMiddleware'
-
+import { cartValidation } from '~/validations/cartValidation'
 const Router = express.Router()
 
 Router.route('/')
   .get(
     authMiddleware.isAuthorized,
     authMiddleware.checkRole('client', 'admin'),
-    cartController.getCart)
-  // .post(bookValidation.createNew, bookController.createNew)
+    cartController.getCartByUserId)
+  .post(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('client', 'admin'),
+    cartController.addToCart
+  )
+  .delete(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('client', 'admin'),
+    cartValidation.removeFromCart,
+    cartController.removeFromCart
+  )
+
+Router.route('/total')
+  .get(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('client', 'admin'),
+    cartController.getTotalItems)
+
+export const cartRoute = Router

@@ -26,28 +26,3 @@ export const categoryService = {
   createNew,
   getCategories
 }
-
-
-// const categoryService = {
-//   createNew: async (reqBody) => {
-//     try {
-//       // Xử lí dữ liệu từy đặc thù dự án
-//       const newCategory = {
-//         ...reqBody,
-//         slug: slugify(reqBody.name)
-//       }
-//       const createdCategory = await categoryModel.createNew(newCategory)
-//       // Trả kết quả về controller
-//       return createdCategory
-//     } catch (error) { throw new Error(error)}
-//   },
-
-//   getCategories: async () => {
-//     try {
-//       const result = await categoryModel.getCategories()
-//       return result
-//     } catch (error) { throw new Error(error)}
-//   }
-// }
-
-// export { categoryService }

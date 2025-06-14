@@ -1,5 +1,5 @@
-
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from 'react-redux'
 import {
   Box,
   Container,
@@ -27,19 +27,18 @@ import {
   Remove as RemoveIcon,
   Delete as DeleteIcon,
   ShoppingCart as ShoppingCartIcon,
-  LocalOffer as CouponIcon,
   Security as SecurityIcon,
   LocalShipping as ShippingIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowForward as ArrowForwardIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
+  ArrowForward as ArrowForwardIcon
 } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 import AppBar from "~/components/AppBar/AppBar"
 import Footer from "~/components/Footer/Footer"
+import { fetchCartAPI, updateQuantity, removeFromCartAPI, toggleSelectItem, toggleSelectAll } from '~/redux/cart/cartSlice'
+import { toast } from 'react-toastify'
 
-import { mockBooks, mockCategories, mockCartItems } from '~/apis/mockData'
+
 const CartContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(3),
   paddingBottom: theme.spacing(6),
@@ -98,72 +97,13 @@ const SelectAllHeader = styled(Box)(({ theme }) => ({
 
 function Cart() {
   const navigate = useNavigate()
-  const [cartItems, setCartItems] = useState([])
-  const [selectedItems, setSelectedItems] = useState(new Set())
-  const [promoCode, setPromoCode] = useState("")
-  const [appliedPromo, setAppliedPromo] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [favorites, setFavorites] = useState(new Set())
-
-
-  // Helper function để tìm book theo ID
-  const findBookById = (bookId) => {
-    return mockBooks.find((book) => book._id === bookId)
-  }
-
-  // Helper function để tìm category theo ID
-  const findCategoryById = (categoryId) => {
-    return mockCategories.find((category) => category._id === categoryId)
-  }
-
-  // Transform cart data để kết hợp với book data
-  const transformCartData = (cartData) => {
-    if (!cartData || cartData.length === 0) return []
-
-    const userCart = cartData[0] // Giả sử lấy cart của user đầu tiên
-
-    return userCart.items
-      .map((cartItem) => {
-        const book = findBookById(cartItem.bookId)
-        const category = findCategoryById(book?.categoryId)
-
-        if (!book) return null
-
-        return {
-          id: cartItem.bookId,
-          bookId: cartItem.bookId,
-          title: book.title,
-          author: book.author,
-          price: book.price,
-          originalPrice: book.originalPrice || book.price,
-          quantity: cartItem.quantity,
-          image: book.image,
-          inStock: book.inStock,
-          maxQuantity: book.stock,
-          category: category?.name || "Không xác định",
-          categoryId: book.category,
-          description: book.description,
-          publisher: book.publisher,
-          publishYear: book.publishYear,
-          pages: book.pages,
-        }
-      })
-      .filter(Boolean) // Loại bỏ null values
-  }
+  const dispatch = useDispatch()
+  const { items: cartItems = [], selectedItems: selectedItemsArray = [], loading, error } = useSelector(state => state.cart)
+  const selectedItems = new Set(Array.isArray(selectedItemsArray) ? selectedItemsArray : [])
 
   useEffect(() => {
-    // Simulate loading cart data
-    setLoading(true)
-    setTimeout(() => {
-      const transformedCartItems = transformCartData(mockCartItems)
-      setCartItems(transformedCartItems)
-
-      // Tự động chọn các sản phẩm còn hàng
-      const inStockItems = transformedCartItems.filter((item) => item.inStock).map((item) => item.id)
-      setSelectedItems(new Set(inStockItems))
-      setLoading(false)
-    }, 500)
-  }, [])
+    dispatch(fetchCartAPI())
+  }, [dispatch])
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -172,57 +112,26 @@ function Cart() {
     }).format(price)
   }
 
-  const updateQuantity = (id, newQuantity) => {
+  const handleUpdateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: Math.min(newQuantity, item.maxQuantity) } : item)),
-    )
+    dispatch(updateQuantity({ bookId: id, quantity: newQuantity }))
   }
 
-  const removeItem = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id))
-    setSelectedItems((prev) => {
-      const newSelected = new Set(prev)
-      newSelected.delete(id)
-      return newSelected
-    })
-  }
-
-  const toggleFavorite = (id) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id)
-      } else {
-        newFavorites.add(id)
-      }
-      return newFavorites
-    })
-  }
-
-  const toggleSelectItem = (id) => {
-    setSelectedItems((prev) => {
-      const newSelected = new Set(prev)
-      if (newSelected.has(id)) {
-        newSelected.delete(id)
-      } else {
-        newSelected.add(id)
-      }
-      return newSelected
-    })
-  }
-
-  const toggleSelectAll = () => {
-    const inStockItems = cartItems.filter((item) => item.inStock)
-    const allInStockSelected = inStockItems.every((item) => selectedItems.has(item.id))
-
-    if (allInStockSelected) {
-      // Bỏ chọn tất cả
-      setSelectedItems(new Set())
-    } else {
-      // Chọn tất cả sản phẩm còn hàng
-      setSelectedItems(new Set(inStockItems.map((item) => item.id)))
+  const handleRemoveItem = async (bookId) => {
+    try {
+      await dispatch(removeFromCartAPI(bookId)).unwrap()
+      await dispatch(fetchCartAPI())
+      toast.success('Đã xóa sản phẩm khỏi giỏ hàng')
+    } catch (error) {
+      toast.error('Không thể xóa sản phẩm khỏi giỏ hàng')
     }
+  }
+  const handleToggleSelectItem = (id) => {
+    dispatch(toggleSelectItem(id))
+  }
+
+  const handleToggleSelectAll = () => {
+    dispatch(toggleSelectAll())
   }
 
   // Calculations - chỉ tính cho sản phẩm được chọn
@@ -231,7 +140,6 @@ function Cart() {
   const savings = selectedCartItems.reduce((sum, item) => sum + (item.originalPrice - item.price) * item.quantity, 0)
   const shippingFee = subtotal > 500000 ? 0 : 30000
   const total = subtotal + shippingFee
-
 
   // Check select all state
   const inStockItems = cartItems.filter((item) => item.inStock)
@@ -244,6 +152,18 @@ function Cart() {
         <AppBar />
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
           <Typography>Đang tải giỏ hàng...</Typography>
+        </Box>
+        <Footer />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+        <AppBar />
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Alert severity="error">{error}</Alert>
         </Box>
         <Footer />
       </Box>
@@ -267,7 +187,7 @@ function Cart() {
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={() => navigate("/bookstore")}
+              onClick={() => navigate("/home")}
               sx={{ minWidth: "150px" }}
             >
               Tiếp tục mua sắm
@@ -284,7 +204,7 @@ function Cart() {
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 Hãy khám phá các cuốn sách tuyệt vời và thêm chúng vào giỏ hàng!
               </Typography>
-              <Button variant="contained" size="large" onClick={() => navigate("/bookstore")}>
+              <Button variant="contained" size="large" onClick={() => navigate("/home")}>
                 Khám phá sách ngay
               </Button>
             </Paper>
@@ -300,7 +220,7 @@ function Cart() {
                       <Checkbox
                         checked={allInStockSelected}
                         indeterminate={someInStockSelected && !allInStockSelected}
-                        onChange={toggleSelectAll}
+                        onChange={handleToggleSelectAll}
                         disabled={inStockItems.length === 0}
                       />
                     }
@@ -341,7 +261,7 @@ function Cart() {
                           <Grid item xs={12} sm={1}>
                             <Checkbox
                               checked={selectedItems.has(item.id)}
-                              onChange={() => toggleSelectItem(item.id)}
+                              onChange={() => handleToggleSelectItem(item.id)}
                               disabled={!item.inStock}
                               color="primary"
                             />
@@ -389,7 +309,6 @@ function Cart() {
                             <Typography variant="body2" color="text.secondary" gutterBottom>
                               Số trang: {item.pages}
                             </Typography>
-                            <Chip label={item.category} size="small" variant="outlined" sx={{ mb: 1 }} />
 
                             {!item.inStock && <Chip label="Hết hàng" color="error" size="small" />}
 
@@ -415,7 +334,7 @@ function Cart() {
                               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                                 <QuantityButton
                                   size="small"
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                                   disabled={!item.inStock || item.quantity <= 1}
                                 >
                                   <RemoveIcon fontSize="small" />
@@ -423,7 +342,7 @@ function Cart() {
                                 <TextField
                                   size="small"
                                   value={item.quantity}
-                                  onChange={(e) => updateQuantity(item.id, Number.parseInt(e.target.value) || 1)}
+                                  onChange={(e) => handleUpdateQuantity(item.id, Number.parseInt(e.target.value) || 1)}
                                   disabled={!item.inStock}
                                   sx={{
                                     width: "60px",
@@ -433,7 +352,7 @@ function Cart() {
                                 />
                                 <QuantityButton
                                   size="small"
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                                   disabled={!item.inStock || item.quantity >= item.maxQuantity}
                                 >
                                   <AddIcon fontSize="small" />
@@ -454,13 +373,8 @@ function Cart() {
 
                               {/* Action Buttons */}
                               <Box sx={{ display: "flex", gap: 1 }}>
-                                <Tooltip title={favorites.has(item.id) ? "Bỏ yêu thích" : "Thêm vào yêu thích"}>
-                                  <IconButton size="small" onClick={() => toggleFavorite(item.id)}>
-                                    {favorites.has(item.id) ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-                                  </IconButton>
-                                </Tooltip>
                                 <Tooltip title="Xóa khỏi giỏ hàng">
-                                  <IconButton size="small" color="error" onClick={() => removeItem(item.id)}>
+                                  <IconButton size="small" color="error" onClick={() => handleRemoveItem(item.bookId)}>
                                     <DeleteIcon />
                                   </IconButton>
                                 </Tooltip>
@@ -489,40 +403,6 @@ function Cart() {
                       Đã chọn {selectedItems.size} sản phẩm để thanh toán
                     </Alert>
                   )}
-
-                  {/* Promo Code */}
-                  {/* <Typography variant="subtitle2" gutterBottom>
-                    Mã giảm giá
-                  </Typography>
-                  <PromoCodeBox>
-                    <TextField
-                      size="small"
-                      placeholder="Nhập mã giảm giá"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                      sx={{ flex: 1 }}
-                      InputProps={{
-                        startAdornment: <CouponIcon sx={{ mr: 1, color: "text.secondary" }} />,
-                      }}
-                    />
-                    <Button variant="outlined" onClick={applyPromoCode} disabled={!promoCode}>
-                      Áp dụng
-                    </Button>
-                  </PromoCodeBox>
-
-                  {appliedPromo && (
-                    <Alert
-                      severity="success"
-                      action={
-                        <IconButton size="small" onClick={removePromoCode}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      }
-                      sx={{ mb: 2 }}
-                    >
-                      {appliedPromo.description} đã được áp dụng!
-                    </Alert>
-                  )} */}
 
                   <Divider sx={{ my: 2 }} />
 
@@ -576,7 +456,7 @@ function Cart() {
                   {/* Security Badge */}
                   <SecurityBadge>
                     <SecurityIcon color="success" />
-                    <Typography variant="body2" color="success.dark">
+                    <Typography variant="body2" color="#fff">
                       Thanh toán an toàn & bảo mật
                     </Typography>
                   </SecurityBadge>

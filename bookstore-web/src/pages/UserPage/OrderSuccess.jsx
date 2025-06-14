@@ -1,6 +1,4 @@
-"use client"
-
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AppBar from "~/components/AppBar/AppBar"
 import Footer from "~/components/Footer/Footer"
@@ -11,60 +9,64 @@ import Paper from "@mui/material/Paper"
 import Button from "@mui/material/Button"
 import Divider from "@mui/material/Divider"
 import Grid from "@mui/material/Unstable_Grid2"
+import CardMedia from "@mui/material/CardMedia"
 
 // Icons
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline"
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag"
 import HomeIcon from "@mui/icons-material/Home"
 
+import { fetchNewOrderAPI } from '~/apis/client'
+
 function OrderSuccessPage() {
   const navigate = useNavigate()
-  const orderNumber = "DH" + Math.floor(100000 + Math.random() * 900000)
-  const orderDate = new Date().toLocaleDateString("vi-VN")
-
-  // Mock order data
-  const orderData = {
-    id: orderNumber,
-    date: orderDate,
-    total: 999000,
-    shipping: 30000,
-    paymentMethod: "Thanh toán khi nhận hàng (COD)",
-    items: [
-      {
-        id: "1",
-        title: "Clean Code",
-        author: "Robert C. Martin",
-        price: 299000,
-        quantity: 1,
-      },
-      {
-        id: "2",
-        title: "The Pragmatic Programmer",
-        author: "David Thomas",
-        price: 350000,
-        quantity: 2,
-      },
-    ],
-    shippingAddress: {
-      name: "Nguyễn Văn A",
-      address: "123 Đường ABC, Phường 1, Quận 1",
-      city: "TP. Hồ Chí Minh",
-      phone: "0901234567",
-      email: "nguyenvana@example.com",
-    },
-  }
+  const [orderData, setOrderData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0)
+
+    // Lấy thông tin đơn hàng mới nhất
+    const fetchLatestOrder = async () => {
+      try {
+        setLoading(true)
+        const response = await fetchNewOrderAPI()
+        if (response) {
+          setOrderData(response)
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLatestOrder()
   }, [])
+
+  // Nếu đang loading hoặc chưa có dữ liệu
+  if (loading || !orderData) {
+    return (
+      <Container disableGutters maxWidth={false}>
+        <AppBar />
+        <Container maxWidth="md" sx={{ py: 6, textAlign: 'center' }}>
+          <Typography>Đang tải thông tin đơn hàng...</Typography>
+        </Container>
+        <Footer />
+      </Container>
+    )
+  }
+
+  const orderNumber ="DH"+ orderData._id
+  const orderDate = new Date(orderData.createdAt).toLocaleDateString("vi-VN")
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + " đ"
   }
 
   const handleContinueShopping = () => {
-    navigate("/bookstore")
+    navigate("/home")
   }
 
   const handleViewOrders = () => {
@@ -102,12 +104,12 @@ function OrderSuccessPage() {
           </Typography>
 
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={5  }>
               <Typography variant="body2" color="text.secondary">
                 Mã đơn hàng
               </Typography>
               <Typography variant="body1" fontWeight="500">
-                {orderData.id}
+                {orderNumber}
               </Typography>
             </Grid>
             <Grid xs={12} sm={6} md={3}>
@@ -115,15 +117,7 @@ function OrderSuccessPage() {
                 Ngày đặt hàng
               </Typography>
               <Typography variant="body1" fontWeight="500">
-                {orderData.date}
-              </Typography>
-            </Grid>
-            <Grid xs={12} sm={6} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Tổng tiền
-              </Typography>
-              <Typography variant="body1" fontWeight="500" color="primary">
-                {formatPrice(orderData.total)}
+                {orderDate}
               </Typography>
             </Grid>
             <Grid xs={12} sm={6} md={3}>
@@ -143,7 +137,7 @@ function OrderSuccessPage() {
           </Typography>
 
           {orderData.items.map((item) => (
-            <Box key={item.id} sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Box key={item.bookId} sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Box
                   sx={{
@@ -157,16 +151,24 @@ function OrderSuccessPage() {
                     mr: 2,
                   }}
                 >
-                  <Typography variant="body2" fontWeight="500">
-                    {item.quantity}x
-                  </Typography>
+                  <CardMedia
+                    component="img"
+                    image={item.image}
+                    alt={item.title}
+                    sx={{
+                      width: "100%",
+                      height: 40,
+                      objectFit: "cover",
+                      borderRadius: 1,
+                    }}
+                  />
                 </Box>
                 <Box>
                   <Typography variant="body1" fontWeight="500">
                     {item.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {item.author}
+                    SL:{item.quantity}x
                   </Typography>
                 </Box>
               </Box>
@@ -180,7 +182,7 @@ function OrderSuccessPage() {
 
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
             <Typography variant="body1">Tạm tính</Typography>
-            <Typography variant="body1">{formatPrice(orderData.total - orderData.shipping)}</Typography>
+            <Typography variant="body1">{formatPrice(orderData.subtotal)}</Typography>
           </Box>
 
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -193,7 +195,7 @@ function OrderSuccessPage() {
               Tổng cộng
             </Typography>
             <Typography variant="subtitle1" fontWeight="600" color="primary">
-              {formatPrice(orderData.total)}
+              {formatPrice(orderData.totalAmount)}
             </Typography>
           </Box>
         </Paper>
@@ -209,15 +211,15 @@ function OrderSuccessPage() {
                 Người nhận
               </Typography>
               <Typography variant="body1" fontWeight="500">
-                {orderData.shippingAddress.name}
+                {orderData.shippingInfo.fullName}
               </Typography>
               <Typography variant="body1">
-                {orderData.shippingAddress.address}, {orderData.shippingAddress.city}
+                {orderData.shippingInfo.street}, {orderData.shippingInfo.ward}, {orderData.shippingInfo.district}, {orderData.shippingInfo.city}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                SĐT: {orderData.shippingAddress.phone}
+                SĐT: {orderData.shippingInfo.phone}
               </Typography>
-              <Typography variant="body1">Email: {orderData.shippingAddress.email}</Typography>
+              <Typography variant="body1">Email: {orderData.shippingInfo.email}</Typography>
             </Grid>
             <Grid xs={12} md={6}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -234,7 +236,7 @@ function OrderSuccessPage() {
                   }}
                 />
                 <Typography variant="body1" fontWeight="500">
-                  Đã tiếp nhận
+                  {orderData.status === 'pending' ? ' Chờ xác nhận' : orderData.status}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ ml: 3 }}>

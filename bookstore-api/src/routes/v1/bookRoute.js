@@ -8,14 +8,17 @@ const Router = express.Router()
 Router.route('/')
   .get(bookController.getAllBooks)
   .post(
-    authMiddleware.isAuthorized,
-    authMiddleware.checkRole('admin'),
+    // authMiddleware.isAuthorized,
+    // authMiddleware.checkRole('admin'),
     bookValidation.createNew,
     bookController.createNew
   )
 
 Router.route('/search')
   .get(bookController.searchBooks)
+
+Router.route('/related')
+  .get(bookController.getRelatedBooks)
 
 Router.route('/:id')
   .get(bookController.getDetails)

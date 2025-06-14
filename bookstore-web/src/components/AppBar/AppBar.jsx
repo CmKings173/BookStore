@@ -1,5 +1,4 @@
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Box from "@mui/material/Box"
 import ModeSelect from "~/components/ModeSelect/ModeSelect"
 import SvgIcon from "@mui/material/SvgIcon"
@@ -18,10 +17,24 @@ import LocalPhoneIcon from "@mui/icons-material/LocalPhone"
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser"
 import StorefrontIcon from "@mui/icons-material/Storefront"
 import { useNavigate } from 'react-router-dom'
+// import { fetchTotalItemsAPI } from '~/apis/client'
+import { useSelector, useDispatch } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice'
+import {fetchTotalItemsAPI } from "~/redux/cart/cartSlice"
 
 function AppBar() {
   const [searchValue, setSearchValue] = useState("")
-  const navigate = useNavigate() // Thêm hook này
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  // const [ item, setItem ] = useState(0)
+  const currentUser = useSelector(selectCurrentUser)
+  const totalItems = useSelector(state => state.cart.totalItems)
+
+  useEffect(() => {
+    if (currentUser) {
+      dispatch(fetchTotalItemsAPI())
+    }
+  }, [currentUser])
 
   // Thêm hàm xử lý tìm kiếm
   const handleSearch = () => {
@@ -37,6 +50,7 @@ function AppBar() {
       handleSearch()
     }
   }
+
   return (
     <Box
       sx={{
@@ -64,15 +78,6 @@ function AppBar() {
         </Link>
       </Box>
 
-      {/* Divider */}
-      <Box
-        sx={{
-          width: "1px",
-          height: "40px",
-          bgcolor: "rgba(255,255,255,0.3)",
-          mx: 0.5
-        }}
-      />
        <Box
         sx={{
           flex: 1,
@@ -260,30 +265,21 @@ function AppBar() {
           </Box>
         </Box>
 
-        {/* Divider */}
-        <Box
-          sx={{
-            width: "1px",
-            height: "40px",
-            bgcolor: "rgba(255,255,255,0.3)",
-            mx: 1
-          }}
-        />
-
         {/* Dark/Light Mode Toggle */}
         <ModeSelect />
 
         {/* Notifications */}
         <Tooltip title="Thông báo">
-          <Badge color="warning" badgeContent={4} sx={{ cursor: "pointer" }}>
+          <Badge color="warning" sx={{ cursor: "pointer" }}>
             <NotificationsNoneIcon sx={{ color: "white", fontSize: "24px" }} />
           </Badge>
         </Tooltip>
 
         {/* Cart */}
         <Link to="/cart">
+       
           <Tooltip title="Giỏ hàng">
-            <Badge color="warning" badgeContent={4}  sx={{ cursor: "pointer" }}>
+            <Badge color="warning"  badgeContent={currentUser ? totalItems : 0}  sx={{ cursor: "pointer" }} showZero>
               <ShoppingCartIcon sx={{ color: "white", fontSize: "24px" }} />
             </Badge>
           </Tooltip>

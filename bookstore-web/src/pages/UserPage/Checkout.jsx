@@ -18,14 +18,14 @@ import Radio from "@mui/material/Radio"
 import RadioGroup from "@mui/material/RadioGroup"
 import FormControl from "@mui/material/FormControl"
 import Divider from "@mui/material/Divider"
-import MenuItem from "@mui/material/MenuItem"
-import Select from "@mui/material/Select"
-import InputLabel from "@mui/material/InputLabel"
+// import MenuItem from "@mui/material/MenuItem"
+// import Select from "@mui/material/Select"
+// import InputLabel from "@mui/material/InputLabel"
 import Alert from "@mui/material/Alert"
 import Collapse from "@mui/material/Collapse"
 import IconButton from "@mui/material/IconButton"
-import Chip from "@mui/material/Chip"
-import Stack from "@mui/material/Stack"
+// import Chip from "@mui/material/Chip"
+// import Stack from "@mui/material/Stack"
 
 // Icons
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart"
@@ -33,70 +33,44 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 import LocalShippingIcon from "@mui/icons-material/LocalShipping"
 import CloseIcon from "@mui/icons-material/Close"
-import CreditCardIcon from "@mui/icons-material/CreditCard"
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance"
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline"
-import SecurityIcon from "@mui/icons-material/Security"
+import SecurityIcon from "@mui/icons-material/Security" 
+import { createNewOrderAPI } from '~/apis/client'
+import { useSelector,  } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice'
 
-import { useTheme } from "@mui/material/styles"
+
 const steps = ["Giỏ hàng", "Thông tin giao hàng", "Phương thức thanh toán", "Xác nhận đơn hàng"]
 
 function CheckoutPage() {
   const navigate = useNavigate()
+  // const currentUser = useSelector(selectCurrentUser)
+  const { items: cartItems = [], selectedItems: selectedItemsArray = [] } = useSelector(state => state.cart)
+  const selectedItems = new Set(Array.isArray(selectedItemsArray) ? selectedItemsArray : [])
   const [activeStep, setActiveStep] = useState(0)
   const [shippingInfo, setShippingInfo] = useState({
     fullName: "",
     email: "",
-    phone: "",
-    address: "",
-    city: "",
-    district: "",
+    street: "",
     ward: "",
+    district: "",
+    city: "",
+    phone: "",
     note: "",
   })
-  const [paymentMethod, setPaymentMethod] = useState("cod")
-  const [sameAsBilling, setSameAsBilling] = useState(true)
-  const [billingInfo, setBillingInfo] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    district: "",
-    ward: "",
-  })
+  const [paymentMethod, setPaymentMethod] = useState("COD")
   const [alertOpen, setAlertOpen] = useState(false)
   const [alertMessage, setAlertMessage] = useState("")
   const [alertSeverity, setAlertSeverity] = useState("error")
 
-  // Mock cart items
-  const cartItems = [
-    {
-      id: "1",
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      price: 299000,
-      originalPrice: 350000,
-      quantity: 1,
-      image: "https://bizweb.dktcdn.net/thumb/grande/100/180/408/products/clean-code.jpg?v=1649847195810",
-    },
-    {
-      id: "2",
-      title: "The Pragmatic Programmer",
-      author: "David Thomas",
-      price: 350000,
-      originalPrice: 400000,
-      quantity: 2,
-      image: "https://edwardthienhoang.wordpress.com/wp-content/uploads/2021/09/pracmatic-programmer.jpg",
-    },
-  ]
-
-  // Calculate order summary
-  const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  const discount = cartItems.reduce((total, item) => total + (item.originalPrice - item.price) * item.quantity, 0)
+  // Calculate order summary using selected items
+  const selectedCartItems = cartItems.filter((item) => selectedItems.has(item.id))
+  const subtotal = selectedCartItems.reduce((total, item) => total + item.price * item.quantity, 0)
   const shipping = subtotal >= 500000 ? 0 : 30000
-  const total = subtotal + shipping
+  const totalAmount = subtotal + shipping
 
+
+  
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + " đ"
   }
@@ -104,12 +78,12 @@ function CheckoutPage() {
   const handleNext = () => {
     if (activeStep === 1) {
       // Validate shipping information
-      const { fullName, email, phone, address, city } = shippingInfo
-      if (!fullName || !email || !phone || !address || !city) {
+      const { fullName, email, phone, street, city, ward, district } = shippingInfo
+      if (!fullName || !email ||!phone || !street || !city || !ward || !district) {
         setAlertMessage("Vui lòng điền đầy đủ thông tin giao hàng")
         setAlertSeverity("error")
         setAlertOpen(true)
-        return
+        return  
       }
     }
 
@@ -124,16 +98,44 @@ function CheckoutPage() {
     }
 
     if (activeStep === steps.length - 1) {
-      // Place order
-      setAlertMessage("Đặt hàng thành công! Cảm ơn bạn đã mua sắm.")
-      setAlertSeverity("success")
-      setAlertOpen(true)
-      setTimeout(() => {
-        navigate("/order-success")
-      }, 2000)
+      // Prepare order data
+      const orderData = {
+        items: selectedCartItems.map(item => ({
+          bookId: item.id,
+          quantity: item.quantity,
+        })),
+        subtotal,
+        shipping,
+        totalAmount,
+        shippingInfo: {
+          ...shippingInfo
+        },
+        paymentMethod
+      }
+      
+      console.log('Order Data:', orderData)
+      
+      // Call API to create order
+      const createOrder = () => {
+          createNewOrderAPI(orderData).then(() => {
+            setAlertMessage("Đặt hàng thành công! Cảm ơn bạn đã mua sắm.")
+            setAlertSeverity("success")
+            setAlertOpen(true)
+            
+            setTimeout(() => {
+              navigate("/order-success")
+            }, 2000)
+          })
+          .catch((error) => {
+            setAlertMessage("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại sau.")
+            setAlertSeverity("error")
+            setAlertOpen(true)
+          })
+      }
+          
+      createOrder()
       return
     }
-
     setActiveStep((prevActiveStep) => prevActiveStep + 1)
     setAlertOpen(false)
   }
@@ -149,45 +151,13 @@ function CheckoutPage() {
       ...prev,
       [name]: value,
     }))
-
-    if (sameAsBilling) {
-      setBillingInfo((prev) => ({
-        ...prev,
-        [name]: value,
-      }))
-    }
-  }
-
-  const handleBillingInfoChange = (e) => {
-    const { name, value } = e.target
-    setBillingInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSameAsBillingChange = (e) => {
-    setSameAsBilling(e.target.checked)
-    if (e.target.checked) {
-      setBillingInfo(shippingInfo)
-    }
   }
 
   const handlePaymentMethodChange = (e) => {
     setPaymentMethod(e.target.value)
   }
 
-  const handleRemoveItem = (itemId) => {
-    // In a real app, this would remove the item from the cart
-    console.log(`Remove item ${itemId}`)
-  }
-
-  const handleUpdateQuantity = (itemId, newQuantity) => {
-    // In a real app, this would update the item quantity
-    if (newQuantity < 1) return
-    console.log(`Update item ${itemId} quantity to ${newQuantity}`)
-  }
-
+  
   const handleContinueShopping = () => {
     navigate("/cart")
   }
@@ -200,7 +170,7 @@ function CheckoutPage() {
       </Typography>
 
       <Paper variant="outlined" sx={{ mb: 3, borderRadius: "8px", overflow: "hidden" }}>
-        {cartItems.map((item, index) => (
+        {selectedCartItems.map((item, index) => (
           <Box key={item.id}>
             <Grid container spacing={2} sx={{ p: 2 }}>
               <Grid xs={12} sm={2} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -242,15 +212,6 @@ function CheckoutPage() {
               </Grid>
               <Grid xs={12} sm={2} sx={{ display: "flex", alignItems: "center" }}>
                 <Box sx={{ display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 1 }}>
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                    disabled={item.quantity <= 1}
-                    sx={{ minWidth: "40px", height: "36px", borderRadius: 0 }}
-                  >
-                    -
-                  </Button>
                   <TextField
                     value={item.quantity}
                     inputProps={{
@@ -264,14 +225,6 @@ function CheckoutPage() {
                       },
                     }}
                   />
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                    sx={{ minWidth: "40px", height: "36px", borderRadius: 0 }}
-                  >
-                    +
-                  </Button>
                 </Box>
               </Grid>
               <Grid xs={12} sm={2} sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
@@ -279,13 +232,10 @@ function CheckoutPage() {
                   <Typography variant="subtitle1" fontWeight="500">
                     {formatPrice(item.price * item.quantity)}
                   </Typography>
-                  <IconButton size="small" color="error" onClick={() => handleRemoveItem(item.id)} sx={{ mt: 1 }}>
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
                 </Box>
               </Grid>
             </Grid>
-            {index < cartItems.length - 1 && <Divider />}
+            {index < selectedCartItems.length - 1 && <Divider />}
           </Box>
         ))}
       </Paper>
@@ -294,7 +244,7 @@ function CheckoutPage() {
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={handleContinueShopping}
+          onClick={() => navigate("/cart")}
           sx={{
             borderColor: "#4caf50",
             color: "#4caf50",
@@ -304,7 +254,7 @@ function CheckoutPage() {
             },
           }}
         >
-          Tiếp tục mua sắm
+          Quay lại giỏ hàng
         </Button>
         <Button
           variant="contained"
@@ -366,52 +316,41 @@ function CheckoutPage() {
             <TextField
               required
               fullWidth
-              label="Địa chỉ"
-              name="address"
-              value={shippingInfo.address}
+              label="Đường"
+              name="street"
+              value={shippingInfo.street}
               onChange={handleShippingInfoChange}
             />
           </Grid>
           <Grid xs={12} sm={4}>
-            <FormControl fullWidth required>
-              <InputLabel>Tỉnh/Thành phố</InputLabel>
-              <Select name="city" value={shippingInfo.city} label="Tỉnh/Thành phố" onChange={handleShippingInfoChange}>
-                <MenuItem value="Hà Nội">Hà Nội</MenuItem>
-                <MenuItem value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</MenuItem>
-                <MenuItem value="Đà Nẵng">Đà Nẵng</MenuItem>
-                <MenuItem value="Hải Phòng">Hải Phòng</MenuItem>
-                <MenuItem value="Cần Thơ">Cần Thơ</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              required
+              fullWidth
+              label="Tỉnh/Thành phố"
+              name="city"
+              value={shippingInfo.city}
+              onChange={handleShippingInfoChange}
+            />
           </Grid>
           <Grid xs={12} sm={4}>
-            <FormControl fullWidth required>
-              <InputLabel>Quận/Huyện</InputLabel>
-              <Select
-                name="district"
-                value={shippingInfo.district}
-                label="Quận/Huyện"
-                onChange={handleShippingInfoChange}
-              >
-                <MenuItem value="Quận 1">Quận 1</MenuItem>
-                <MenuItem value="Quận 2">Quận 2</MenuItem>
-                <MenuItem value="Quận 3">Quận 3</MenuItem>
-                <MenuItem value="Quận 4">Quận 4</MenuItem>
-                <MenuItem value="Quận 5">Quận 5</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              required
+              fullWidth
+              label="Quận/Huyện"
+              name="district"
+              value={shippingInfo.district}
+              onChange={handleShippingInfoChange}
+            />
           </Grid>
           <Grid xs={12} sm={4}>
-            <FormControl fullWidth required>
-              <InputLabel>Phường/Xã</InputLabel>
-              <Select name="ward" value={shippingInfo.ward} label="Phường/Xã" onChange={handleShippingInfoChange}>
-                <MenuItem value="Phường 1">Phường 1</MenuItem>
-                <MenuItem value="Phường 2">Phường 2</MenuItem>
-                <MenuItem value="Phường 3">Phường 3</MenuItem>
-                <MenuItem value="Phường 4">Phường 4</MenuItem>
-                <MenuItem value="Phường 5">Phường 5</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              required
+              fullWidth
+              label="Phường/Xã"
+              name="ward"
+              value={shippingInfo.ward}
+              onChange={handleShippingInfoChange}
+            />
           </Grid>
           <Grid xs={12}>
             <TextField
@@ -476,12 +415,12 @@ function CheckoutPage() {
                 p: 2,
                 mb: 2,
                 borderRadius: "8px",
-                borderColor: paymentMethod === "cod" ? "#4caf50" : "divider",
-                backgroundColor: paymentMethod === "cod" ? "rgba(76, 175, 80, 0.04)" : "transparent",
+                borderColor: paymentMethod === "COD" ? "#4caf50" : "divider",
+                backgroundColor: paymentMethod === "COD" ? "rgba(76, 175, 80, 0.04)" : "transparent",
               }}
             >
               <FormControlLabel
-                value="cod"
+                value="COD"
                 control={<Radio color="primary" />}
                 label={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -492,7 +431,7 @@ function CheckoutPage() {
                   </Box>
                 }
               />
-              {paymentMethod === "cod" && (
+              {paymentMethod === "COD" && (
                 <Typography variant="body2" sx={{ ml: 4, mt: 1, color: "text.secondary" }}>
                   Bạn sẽ thanh toán bằng tiền mặt khi nhận hàng.
                 </Typography>
@@ -505,12 +444,12 @@ function CheckoutPage() {
                 p: 2,
                 mb: 2,
                 borderRadius: "8px",
-                borderColor: paymentMethod === "banking" ? "#4caf50" : "divider",
-                backgroundColor: paymentMethod === "banking" ? "rgba(76, 175, 80, 0.04)" : "transparent",
+                borderColor: paymentMethod === "BANKING" ? "#4caf50" : "divider",
+                backgroundColor: paymentMethod === "BANKING" ? "rgba(76, 175, 80, 0.04)" : "transparent",
               }}
             >
               <FormControlLabel
-                value="banking"
+                value="BANKING"
                 control={<Radio color="primary" />}
                 label={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -521,7 +460,7 @@ function CheckoutPage() {
                   </Box>
                 }
               />
-              {paymentMethod === "banking" && (
+              {paymentMethod === "BANKING" && (
                 <Box sx={{ ml: 4, mt: 1 }}>
                   <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
                     Thực hiện thanh toán vào ngay tài khoản ngân hàng của chúng tôi. Vui lòng sử dụng Mã đơn hàng của
@@ -544,107 +483,8 @@ function CheckoutPage() {
                 </Box>
               )}
             </Paper>
-
           </RadioGroup>
         </FormControl>
-      </Paper>
-
-      <Typography variant="h6" fontWeight="600" gutterBottom>
-        Địa chỉ thanh toán
-      </Typography>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: "8px" }}>
-        <FormControlLabel
-          control={<Checkbox checked={sameAsBilling} onChange={handleSameAsBillingChange} color="primary" />}
-          label="Địa chỉ thanh toán giống với địa chỉ giao hàng"
-        />
-
-        {!sameAsBilling && (
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid xs={12}>
-              <TextField
-                required
-                fullWidth
-                label="Họ và tên"
-                name="fullName"
-                value={billingInfo.fullName}
-                onChange={handleBillingInfoChange}
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={billingInfo.email}
-                onChange={handleBillingInfoChange}
-              />
-            </Grid>
-            <Grid xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="Số điện thoại"
-                name="phone"
-                value={billingInfo.phone}
-                onChange={handleBillingInfoChange}
-              />
-            </Grid>
-            <Grid xs={12}>
-              <TextField
-                required
-                fullWidth
-                label="Địa chỉ"
-                name="address"
-                value={billingInfo.address}
-                onChange={handleBillingInfoChange}
-              />
-            </Grid>
-            <Grid xs={12} sm={4}>
-              <FormControl fullWidth required>
-                <InputLabel>Tỉnh/Thành phố</InputLabel>
-                <Select name="city" value={billingInfo.city} label="Tỉnh/Thành phố" onChange={handleBillingInfoChange}>
-                  <MenuItem value="Hà Nội">Hà Nội</MenuItem>
-                  <MenuItem value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</MenuItem>
-                  <MenuItem value="Đà Nẵng">Đà Nẵng</MenuItem>
-                  <MenuItem value="Hải Phòng">Hải Phòng</MenuItem>
-                  <MenuItem value="Cần Thơ">Cần Thơ</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid xs={12} sm={4}>
-              <FormControl fullWidth required>
-                <InputLabel>Quận/Huyện</InputLabel>
-                <Select
-                  name="district"
-                  value={billingInfo.district}
-                  label="Quận/Huyện"
-                  onChange={handleBillingInfoChange}
-                >
-                  <MenuItem value="Quận 1">Quận 1</MenuItem>
-                  <MenuItem value="Quận 2">Quận 2</MenuItem>
-                  <MenuItem value="Quận 3">Quận 3</MenuItem>
-                  <MenuItem value="Quận 4">Quận 4</MenuItem>
-                  <MenuItem value="Quận 5">Quận 5</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid xs={12} sm={4}>
-              <FormControl fullWidth required>
-                <InputLabel>Phường/Xã</InputLabel>
-                <Select name="ward" value={billingInfo.ward} label="Phường/Xã" onChange={handleBillingInfoChange}>
-                  <MenuItem value="Phường 1">Phường 1</MenuItem>
-                  <MenuItem value="Phường 2">Phường 2</MenuItem>
-                  <MenuItem value="Phường 3">Phường 3</MenuItem>
-                  <MenuItem value="Phường 4">Phường 4</MenuItem>
-                  <MenuItem value="Phường 5">Phường 5</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        )}
       </Paper>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
@@ -686,8 +526,8 @@ function CheckoutPage() {
         Xác nhận đơn hàng
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid xs={12} md={8}>
+      <Grid container spacing={2}>
+        <Grid xs={12} md={10}>
           <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: "8px" }}>
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Thông tin giao hàng
@@ -697,7 +537,7 @@ function CheckoutPage() {
                 {shippingInfo.fullName}
               </Typography>
               <Typography variant="body2">
-                {shippingInfo.address}, {shippingInfo.ward}, {shippingInfo.district}, {shippingInfo.city}
+                {shippingInfo.street}, {shippingInfo.ward}, {shippingInfo.district}, {shippingInfo.city}
               </Typography>
               <Typography variant="body2">
                 Email: {shippingInfo.email} | SĐT: {shippingInfo.phone}
@@ -717,81 +557,19 @@ function CheckoutPage() {
             <Box sx={{ mb: 2 }}>
               <Typography variant="body1">
                 {paymentMethod === "cod" && "Thanh toán khi nhận hàng (COD)"}
-                {paymentMethod === "credit" && "Thanh toán bằng thẻ tín dụng/ghi nợ"}
                 {paymentMethod === "banking" && "Chuyển khoản ngân hàng"}
-                {paymentMethod === "momo" && "Thanh toán qua Ví MoMo"}
               </Typography>
             </Box>
 
             <Divider sx={{ my: 2 }} />
-
             <Typography variant="h6" fontWeight="600" gutterBottom>
-              Sản phẩm đã đặt
-            </Typography>
-            {cartItems.map((item) => (
-              <Box key={item.id} sx={{ display: "flex", mb: 2 }}>
-                <Box
-                  component="img"
-                  src={item.image}
-                  alt={item.title}
-                  sx={{
-                    width: "60px",
-                    height: "60px",
-                    objectFit: "contain",
-                    mr: 2,
-                  }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" fontWeight="500">
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.author}
-                  </Typography>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.5 }}>
-                    <Typography variant="body2">
-                      {formatPrice(item.price)} x {item.quantity}
-                    </Typography>
-                    <Typography variant="body1" fontWeight="500">
-                      {formatPrice(item.price * item.quantity)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-          </Paper>
-        </Grid>
-
-        <Grid xs={12} md={4}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              mb: 3,
-              borderRadius: "8px",
-              position: "sticky",
-              top: "20px",
-            }}
-          >
-            <Typography variant="h6" fontWeight="600" gutterBottom>
-              Tóm tắt đơn hàng
+              Thanh toán
             </Typography>
 
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
               <Typography variant="body1">Tạm tính</Typography>
               <Typography variant="body1">{formatPrice(subtotal)}</Typography>
             </Box>
-
-            {discount > 0 && (
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography variant="body1" color="error">
-                  Giảm giá
-                </Typography>
-                <Typography variant="body1" color="error">
-                  -{formatPrice(discount)}
-                </Typography>
-              </Box>
-            )}
 
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
               <Typography variant="body1">Phí vận chuyển</Typography>
@@ -805,7 +583,7 @@ function CheckoutPage() {
                 Tổng cộng
               </Typography>
               <Typography variant="h6" fontWeight="600" color="primary">
-                {formatPrice(total)}
+                {formatPrice(totalAmount)}
               </Typography>
             </Box>
 
@@ -814,6 +592,7 @@ function CheckoutPage() {
               variant="contained"
               size="large"
               startIcon={<ShoppingCartIcon />}
+              className="interceptor-loading"
               onClick={handleNext}
               sx={{
                 py: 1.5,
@@ -919,7 +698,7 @@ function CheckoutPage() {
               </Typography>
 
               <Box sx={{ mb: 2 }}>
-                {cartItems.map((item) => (
+                {selectedCartItems.map((item) => (
                   <Box key={item.id} sx={{ display: "flex", mb: 2 }}>
                     <Box
                       component="img"
@@ -954,17 +733,6 @@ function CheckoutPage() {
                 <Typography variant="body2">{formatPrice(subtotal)}</Typography>
               </Box>
 
-              {discount > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                  <Typography variant="body2" color="error">
-                    Giảm giá
-                  </Typography>
-                  <Typography variant="body2" color="error">
-                    -{formatPrice(discount)}
-                  </Typography>
-                </Box>
-              )}
-
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                 <Typography variant="body2">Phí vận chuyển</Typography>
                 <Typography variant="body2">{shipping > 0 ? formatPrice(shipping) : "Miễn phí"}</Typography>
@@ -977,7 +745,7 @@ function CheckoutPage() {
                   Tổng cộng
                 </Typography>
                 <Typography variant="subtitle1" fontWeight="600" color="primary">
-                  {formatPrice(total)}
+                  {formatPrice(totalAmount)}
                 </Typography>
               </Box>
 
@@ -999,54 +767,9 @@ function CheckoutPage() {
                 </Box>
               )}
 
-              {activeStep === 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Mã giảm giá"
-                    placeholder="Nhập mã giảm giá"
-                    size="small"
-                    InputProps={{
-                      endAdornment: (
-                        <Button
-                          variant="text"
-                          sx={{
-                            color: "#4caf50",
-                            "&:hover": {
-                              backgroundColor: "transparent",
-                              color: "#45a049",
-                            },
-                          }}
-                        >
-                          Áp dụng
-                        </Button>
-                      ),
-                    }}
-                  />
-                </Box>
-              )}
+
             </Paper>
 
-            {/* Secure payment info
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
-                bgcolor: "#f9f9f9",
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom fontWeight="500">
-                Chúng tôi chấp nhận
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <Chip label="Visa" size="small" />
-                <Chip label="MasterCard" size="small" />
-                <Chip label="JCB" size="small" />
-                <Chip label="MoMo" size="small" />
-              </Stack>
-            </Box> */}
           </Grid>
         </Grid>
       </Container>

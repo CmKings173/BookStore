@@ -36,3 +36,12 @@ export const searchBooksAPI = async (query) => {
   return response.data
 }
 
+export const fetchOrderDetailAPI = async (id) => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/orders/orderDetail/${id}`)
+  return response.data
+}
+
+export const updateOrderStatusAPI = async (orderId, status) => {
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/orders/updateOrderStatus/${orderId}`, { status })
+  return response.data
+}

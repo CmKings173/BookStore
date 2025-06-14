@@ -13,7 +13,7 @@ import Cart from '~/pages/UserPage/Cart'
 import BookDetail from '~/pages/UserPage/BookDetail'
 import Checkout from '~/pages/UserPage/Checkout'
 import OrderSuccessPage from '~/pages/UserPage/OrderSuccess'
-import OrderHistory from '~/pages/UserPage/Order'
+import OrderHistory from '~/pages/UserPage/OrderHistory'
 import OrderDetail from '~/pages/UserPage/OrderDetail'
 
 import DashBoard from '~/pages/AdminPage/Dashboard'
@@ -50,7 +50,7 @@ const AdminLayoutWrapper = () => {
 
 function App() {
   const currentUser = useSelector(selectCurrentUser)
-  console.log('App - Current User:', currentUser)
+  // console.log('App - Current User:', currentUser)
 
   return (
     <Routes>
@@ -71,7 +71,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-success" element={<OrderSuccessPage />} />
         <Route path="/account/orders" element={<OrderHistory />} />
-        <Route path="/account/order-detail" element={<OrderDetail />} />
+        <Route path="/account/order-detail/:id" element={<OrderDetail />} />
         <Route path="/settings/account" element={<Settings />} />
         <Route path="/settings/security" element={<Settings />} />
       </Route>

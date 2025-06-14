@@ -80,11 +80,26 @@ const searchBooks = async (req, res, next) => {
   }
 }
 
+const getRelatedBooks = async (req, res, next) => {
+  try {
+    const { categoryId, currentBookId, limit } = req.query
+    const result = await bookService.getRelatedBooks(
+      categoryId,
+      currentBookId,
+      parseInt(limit, 10) || 4
+    )
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const bookController = {
   createNew,
   getDetails,
   deleteBook,
   getAllBooks,
   updateBook,
-  searchBooks
+  searchBooks,
+  getRelatedBooks
 }
