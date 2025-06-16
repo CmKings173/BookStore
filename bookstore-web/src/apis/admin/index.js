@@ -33,3 +33,8 @@ export const getAllOrdersAPI = async () => {
   return response.data
 }
 
+export const updateUserAPI = async (userId, data) => {
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/users/updateRole/${userId}`, data)
+  return response.data
+}
+

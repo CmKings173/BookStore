@@ -50,6 +50,7 @@ import PhoneIcon from "@mui/icons-material/Phone"
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
 import { fetchUsersAPI, deleteUserAPI } from "~/apis/admin"
 import DeleteUserDialog from '~/pages/AdminPage/components/DeleteUserDialog'
+import UserDetailDialog from './components/UserDetailDialog'
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -203,18 +204,32 @@ const Customers = () => {
     setDeleteDialogOpen(false)
     setUserToDelete(null)
   }
-  // const filteredUsers = users.filter((user) => {
-  //   const matchesSearch =
-  //     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
 
+  const handleUserUpdate = (updatedUser) => {
+    // Cập nhật danh sách users sau khi user được cập nhật
+    setUsers(prevUsers => 
+      prevUsers.map(user => 
+        user._id === updatedUser._id ? updatedUser : user
+      )
+    )
+  }
 
-  //   const matchesRole = roleFilter === "" || user.role === roleFilter
-  //   const matchesStatus = statusFilter === "" || user.isActive === statusFilter
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
 
-  //   return matchesSearch && matchesRole && matchesStatus
-  // })
+    const matchesRole = roleFilter === "" || 
+      (roleFilter === "admin" && user.role === "admin") ||
+      (roleFilter === "client" && user.role === "client")
+
+    const matchesStatus = statusFilter === "" || 
+      (statusFilter === "active" && user.isActive === true) ||
+      (statusFilter === "inactive" && user.isActive === false)
+
+    return matchesSearch && matchesRole && matchesStatus
+  })
 
   if (!users) {
     return <PageLoadingSpinner caption="Đang tải ..." />
@@ -449,8 +464,8 @@ const Customers = () => {
                   sx={{ borderRadius: "8px" }}
                 >
                   <MenuItem value="">Tất cả</MenuItem>
-                  <MenuItem value="Admin">Admin</MenuItem>
-                  <MenuItem value="Khách hàng">Khách hàng</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="client">Khách hàng</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -496,8 +511,8 @@ const Customers = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users && users.length > 0 ? (
-                users.map((user) => (
+              {filteredUsers && filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <TableRow 
                     key={user._id} 
                     sx={{ 
@@ -573,7 +588,7 @@ const Customers = () => {
                       </Box>
                     </TableCell>
                     <TableCell align="right">
-                      {/* <Tooltip title="Xem chi tiết">
+                      <Tooltip title="Xem chi tiết">
                         <IconButton 
                           size="small" 
                           onClick={() => handleViewUser(user)}
@@ -588,8 +603,8 @@ const Customers = () => {
                         >
                           <MoreVertIcon fontSize="small" />
                         </IconButton>
-                      </Tooltip> */}
-                      <Tooltip title="Chỉnh sửa">
+                      </Tooltip>
+                      {/* <Tooltip title="Chỉnh sửa">
                         <IconButton 
                           size="small"
                           sx={{ 
@@ -603,7 +618,7 @@ const Customers = () => {
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
-                      </Tooltip>
+                      </Tooltip> */}
                       <Tooltip title="Xóa">
                         <IconButton 
                           size="small"
@@ -641,112 +656,12 @@ const Customers = () => {
         
       </Card>
 
-      {/* User Detail Dialog */}
-      {/* <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar 
-              sx={{ 
-                bgcolor: selectedUser ? getAvatarColor(selectedUser.name) : 'grey.500',
-                width: 50,
-                height: 50
-              }}
-            >
-              {selectedUser?.name.charAt(0)}
-            </Avatar>
-            <Box>
-              <Typography variant="h6">{selectedUser?.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Chi tiết thông tin người dùng
-              </Typography>
-            </Box>
-          </Box>
-
-          
-        </DialogTitle>
-        <DialogContent>
-          {selectedUser && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <EmailIcon color="action" />
-                  <Typography variant="body1">{selectedUser.email}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <PhoneIcon color="action" />
-                  <Typography variant="body1">{selectedUser.phone}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Vai trò</Typography>
-                <Chip 
-                  icon={getRoleIcon(selectedUser.role)}
-                  label={selectedUser.role} 
-                  color={getRoleColor(selectedUser.role)} 
-                  size="small"
-                  sx={{ mt: 0.5 }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Trạng thái</Typography>
-                <Chip 
-                  icon={getStatusIcon(selectedUser.status)}
-                  label={selectedUser.status} 
-                  color={getStatusColor(selectedUser.status)} 
-                  size="small"
-                  sx={{ mt: 0.5 }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Ngày tham gia</Typography>
-                <Typography variant="body1">{selectedUser.joinDate}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Số đơn hàng</Typography>
-                <Typography variant="body1">{selectedUser.orders} đơn</Typography>
-              </Grid>
-            </Grid>
-          )}
-
-           {/* Pagination */}
-           {/* {totalUsers > 0 && (
-              <Box
-                sx={{
-                  mt: 4,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Pagination
-                  size="large"
-                  color="primary"
-                  showFirstButton
-                  showLastButton
-                  count={Math.ceil(totalUsers / DEFAULT_ITEMS_PER_PAGE)}
-                  page={page}
-                  // onChange={(e, value) => setPage(value)}
-                  renderItem={(item) => (
-                    <PaginationItem
-                      component={Link}
-                      to={`/admin/users${item.page === DEFAULT_PAGE ? '' : `?page=${item.page}`}`}
-                      {...item}
-                    />
-                  )}
-                />
-              </Box>
-            )} */}
-
-        {/* </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Đóng</Button>
-          <Button variant="contained" startIcon={<EditIcon />}>
-            Chỉnh sửa
-          </Button>
-        </DialogActions>
-      </Dialog> */} 
+      <UserDetailDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        user={selectedUser}
+        onUpdate={handleUserUpdate}
+      />
 
       <DeleteUserDialog
         open={deleteDialogOpen}

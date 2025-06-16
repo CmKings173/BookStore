@@ -40,4 +40,10 @@ Router.route('/')
     authMiddleware.checkRole('admin'),
     userController.getAllUsers)
 
+Router.route('/updateRole/:id')
+  .put(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    userValidation.updateRole,
+    userController.updateRole)
 export const userRoute = Router

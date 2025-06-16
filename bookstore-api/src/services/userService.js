@@ -160,7 +160,7 @@ const update = async (userId, reqBody, userAvatarFile) => {
     } else if (userAvatarFile) {
       // TH upload file lên cloud storage (cloudinary)
       const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, 'user_avatar')
-      console.log('🚀 ~ update ~ uploadResult:', uploadResult)
+      // console.log('🚀 ~ update ~ uploadResult:', uploadResult)
 
       // Lưu lại url (secure_url) của file ảnh vào DB
       updatedUser = await userModel.update(userId, {
@@ -210,6 +210,15 @@ const deleteUser = async (userId) => {
     throw error
   }
 }
+const updateRole = async (userId, role) => {
+  try {
+    // console.log(userId, role)
+    const result = await userModel.updateRole(userId, role)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const userService = {
   createNew,
   login,
@@ -218,5 +227,6 @@ export const userService = {
   update,
   getAllUsers,
   findCartByUserId,
-  deleteUser
+  deleteUser,
+  updateRole
 }

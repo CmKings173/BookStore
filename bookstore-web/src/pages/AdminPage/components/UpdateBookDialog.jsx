@@ -28,7 +28,7 @@ const UpdateBookDialog = ({ open, onClose, bookData, afterCreateNewOrUpdate }) =
 
   useEffect(() => {
     if (open && bookData) {
-      console.log('Book Data:', bookData); // Debug log
+      // console.log('Book Data:', bookData); // Debug log
       reset({
         title: bookData.title || '',
         subtitle: bookData.subtitle || '',

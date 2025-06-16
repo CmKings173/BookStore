@@ -3,7 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE, USERNAME_RULE, USERNAME_RULE_MESSAGE } from '~/utils/validators'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
-
+const USER_ROLE = {
+  CLIENT: 'client',
+  ADMIN: 'admin'
+}
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
     email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
@@ -74,10 +77,22 @@ const deleteUser = async (req, res, next) => {
   }
 }
 
+const updateRole = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    role: Joi.string().valid(USER_ROLE.CLIENT, USER_ROLE.ADMIN)
+  })
+  try {
+    await correctCondition.validateAsync(req.body, { abortEarly: false })
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }
+}
 export const userValidation = {
   createNew,
   verifyAccount,
   login,
   update,
-  deleteUser
+  deleteUser,
+  updateRole
 }

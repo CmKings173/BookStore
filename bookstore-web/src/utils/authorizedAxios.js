@@ -4,14 +4,6 @@ import { interceptorLoadingElements } from './formatters'
 import { refreshTokenAPI } from '~/apis'
 import { logoutUserAPI } from '~/redux/user/userSlice'
 
-/*
-* Không thể import { store } from '~/redux/store' theo cách thông thường ở đây
-* Giải pháp: Inject store — là kỹ thuật khi cần sử dụng biến redux store ở các file ngoài phạm vi component như file authorizeAxios hiện tại.
-* Hiểu đơn giản: khi ứng dụng bắt đầu chạy lên, code sẽ chạy vào main.jsx đầu tiên, từ bên đó chúng ta gọi
-* hàm injectStore ngay lập tức để gán biến mainStore vào biến axiosReduxStore cục bộ trong file này.
-* https://redux.js.org/faq/code-structure#how-can-i-use-the-redux-store-in-non-component-files
-*/
-
 let axiosReduxStore
 export const injectStore = mainStore => { axiosReduxStore = mainStore }
 
@@ -37,8 +29,6 @@ authorizedAxiosInstance.interceptors.request.use((config) => {
 
 // Khởi tạo một cái promise cho việc gọi API refresh_token
 // Mục đích tạo Promise này để khi nào gọi API refresh_token xong xuôi thì mới retry lại nhiều API bị lỗi trước đó.
-// Tham khảo: https://www.thedutchlab.com/en/insights/using-axios-interceptors-for-refreshing-your-api-token
-
 let refreshTokenPromise = null
 // Interceptor response: can thiệp vào giữa những cái response nhận về từ API
 authorizedAxiosInstance.interceptors.response.use((response) => {

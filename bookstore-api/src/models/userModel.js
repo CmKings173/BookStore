@@ -89,12 +89,12 @@ const getAllUsers = async (page, itemsPerPage) => {
       // $facet để xử lý nhiều luồng trong 1 query
       {
         $facet: {
-          // Luồng thứ nhất : query boards
+          // Luồng thứ nhất : query user
           queryUsers: [
             { $skip: pagingSkipValue(page, itemsPerPage) }, // Tính toán giá trị skip
             { $limit: itemsPerPage } // Giới hạn số lượng bản ghi trả về
           ],
-          // Luồng thứ hai : query đếm tổng số lượng bản ghi books trong db và trả về vào biến countedALLBooks
+          // Luồng thứ hai : query đếm tổng số lượng bản ghi users trong db và trả về vào biến countedALLBooks
           queryTotalUsers: [{ $count: 'countedAllUsers' }]
         }
       }
@@ -123,6 +123,25 @@ const deleteOneById = async (userId) => {
     throw new Error(error)
   }
 }
+
+const updateRole = async (userId, updateData) => {
+  try {
+    // Lọc ra các field không được update
+    Object.keys(updateData).forEach(fieldName => {
+      if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
+        delete updateData[fieldName]
+      }
+    })
+
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(userId) },
+      { $set: { role: updateData } },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
@@ -131,5 +150,6 @@ export const userModel = {
   findOneByEmail,
   update,
   getAllUsers,
-  deleteOneById
+  deleteOneById,
+  updateRole
 }

@@ -110,6 +110,17 @@ const deleteUser = async (req, res, next) => {
   } catch (error) {next(error)}
 }
 
+const updateRole = async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    const { role } = req.body
+    console.log('role: ', role)
+    const result = await userService.updateRole(userId, role)
+    res.status(StatusCodes.OK).json(result)
+
+  } catch (error) {next(error)}
+}
+
 export const userController = {
   createNew,
   verifyAccount,
@@ -118,5 +129,6 @@ export const userController = {
   refreshToken,
   update,
   getAllUsers,
-  deleteUser
+  deleteUser,
+  updateRole
 }
