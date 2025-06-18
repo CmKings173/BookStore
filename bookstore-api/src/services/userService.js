@@ -48,7 +48,7 @@ const createNew = async (reqBody) => {
     // Gọi tới Provider để gửi mail
     await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
     // Tạo cart cho user mới
-    await cartModel.createNew({ 
+    await cartModel.createNew({
       userId: typeof getNewUser._id === 'object' ? getNewUser._id.toString() : getNewUser._id,
       items: []
     })

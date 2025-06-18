@@ -29,7 +29,7 @@ import { fetchBooksAPI, fetchCategoriesAPI, searchBooksAPI } from '~/apis/index'
 import CircularProgress from "@mui/material/CircularProgress"
 import HistoryIcon from '@mui/icons-material/History'
 import ButtonGroup from '@mui/material/ButtonGroup'
-
+import { toast } from 'react-toastify'
 
 const SidebarItem = styled(Box)(({ theme }) => ({
   display: "flex",
@@ -71,7 +71,7 @@ function HomePage() {
         }
       })
       .catch(err => {
-        console.error('Error fetching categories:', err)
+        toast.error('Error fetching categories')
       })
   }, [])
 
@@ -81,11 +81,10 @@ function HomePage() {
       try {
         const query = new URLSearchParams(location.search)
         const categorySlug = query.get('category')
-        const searchParam = query.get('search')
-        setSearchQuery(searchParam || "")
-        setSearchQuery(searchParam || "")
-        setSearchQuery(searchParam || "")
-                
+        const searchParam = query.get('search') || ""
+  
+        setSearchQuery(searchParam) // Cập nhật input nếu cần
+  
         let categoryId = "all"
         if (categorySlug) {
           const category = categories.find(c => 
@@ -96,22 +95,21 @@ function HomePage() {
             categoryId = category._id
           }
         }
-        
+  
         setSelectedCategory(categoryId)
-        
+  
         let url = `?page=${page}&itemsPerPage=${DEFAULT_ITEMS_PER_PAGE}`
         if (categoryId !== "all") {
           url += `&categoryId=${categoryId}`
         }
-        if (searchQuery) {
-          url += `&search=${searchQuery}`
+        if (searchParam) {
+          url += `&search=${searchParam}`
         }
-        
-        // Sử dụng searchBooksAPI nếu có search term, ngược lại dùng fetchBooksAPI
-        const res = searchQuery 
+  
+        const res = searchParam
           ? await searchBooksAPI(url)
           : await fetchBooksAPI(url)
-        
+  
         setBooks(res.books || [])
         setTotalBooks(res.totalBooks || 0)
       } catch (err) {
@@ -120,9 +118,10 @@ function HomePage() {
         setIsLoading(false)
       }
     }
-
+  
     fetchBooks()
   }, [page, location.search, categories])
+  
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -298,8 +297,7 @@ function HomePage() {
                     >
                       <Card
                         sx={{
-                          width: "100%",
-                          maxWidth: "220px",
+                          width: "220px",
                           height: 360,
                           display: "flex",
                           flexDirection: "column",
@@ -377,7 +375,7 @@ function HomePage() {
                               display: "-webkit-box",
                               WebkitLineClamp: 1,
                               WebkitBoxOrient: "vertical",
-                              height: "1.2em",
+                              minHeight: "1.2em",
                               lineHeight: "1.2em",
                               mb: 0.5,
                               fontSize: "0.75rem",
