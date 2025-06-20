@@ -22,6 +22,9 @@ import Orders from '~/pages/AdminPage/Orders'
 import Customers from '~/pages/AdminPage/Customers'
 import Analytics from '~/pages/AdminPage/Analytics'
 import AdminLayout from '~/components/Layout/AdminLayout'
+import NewsList from '~/pages/UserPage/NewsList'
+import NewsDetail from '~/pages/UserPage/NewsDetail'
+import Categories from '~/pages/AdminPage/Categories'
 // Giải pháp clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập vào board
 // Sử dụng Outlet để hiển thị các child route
 const ProtectedRoute = ({ user }) => {
@@ -74,6 +77,8 @@ function App() {
         <Route path="/account/order-detail/:id" element={<OrderDetail />} />
         <Route path="/settings/account" element={<Settings />} />
         <Route path="/settings/security" element={<Settings />} />
+        <Route path="/news" element={<NewsList />} />
+        <Route path="/news/:id" element={<NewsDetail />} />
       </Route>
 
       {/* Admin Routes */}
@@ -85,6 +90,8 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="customers" element={<Customers />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="categories" element={<Categories />} />
+
         </Route>
       </Route>
 

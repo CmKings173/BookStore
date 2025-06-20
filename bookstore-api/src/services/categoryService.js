@@ -22,7 +22,15 @@ const getCategories = async () => {
   } catch (error) { throw new Error(error)}
 }
 
+const deleteCategory = async (id) => {
+  try {
+    const result = await categoryModel.deleteCategory(id)
+    return result
+  } catch (error) { throw new Error(error)}
+}
+
 export const categoryService = {
   createNew,
-  getCategories
+  getCategories,
+  deleteCategory
 }

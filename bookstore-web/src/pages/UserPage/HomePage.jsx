@@ -221,6 +221,14 @@ function HomePage() {
                   <Typography variant="body2">Lịch sử đơn hàng</Typography>
                 </Box>
               </SidebarItem>
+              <SidebarItem
+                onClick={() => navigate('/news')}
+              >
+                <HistoryIcon fontSize="small" />
+                <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                  <Typography variant="body2">Tin tức</Typography>
+                </Box>
+              </SidebarItem>
 
           </Grid>
            

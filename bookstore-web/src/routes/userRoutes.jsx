@@ -7,6 +7,8 @@ import OrderSuccessPage from '~/pages/UserPage/OrderSuccess'
 import OrderHistory from '~/pages/UserPage/OrderHistory'
 import OrderDetail from '~/pages/UserPage/OrderDetail'
 import Settings from '~/pages/Settings/Settings'
+import NewsList from '~/pages/UserPage/NewsList'
+import NewsDetail from '~/pages/UserPage/NewsDetail'
 
 const UserRoutes = () => {
   const location = useLocation()
@@ -40,6 +42,14 @@ const UserRoutes = () => {
   if (path === '/settings/account' || path === '/settings/security') {
     console.log('Rendering Settings')
     return <Settings />
+  }
+  if (path === '/news') {
+    console.log('Rendering NewsList')
+    return <NewsList />
+  }
+  if (path.startsWith('/news/')) {
+    console.log('Rendering NewsDetail')
+    return <NewsDetail />
   }
   
   console.log('Rendering BookStore (default)')

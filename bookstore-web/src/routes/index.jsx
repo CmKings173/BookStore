@@ -41,6 +41,7 @@ const AppRoutes = () => {
 
       {/* Admin Routes - Public Access */}
       <Route path="/admin/*" element={<AdminRoutes />} />
+      <Route path="/admin/categories" element={<AdminRoutes />} />
 
       {/* Auth Routes */}
       <Route path='/login' element={<Auth />} />

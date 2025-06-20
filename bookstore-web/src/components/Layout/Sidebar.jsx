@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom"
 import { styled } from "@mui/material/styles"
 import {
@@ -23,6 +22,7 @@ import PeopleIcon from "@mui/icons-material/People"
 import AnalyticsIcon from "@mui/icons-material/Analytics"
 import SettingsIcon from "@mui/icons-material/Settings"
 import LogoutIcon from "@mui/icons-material/Logout"
+import CategoryIcon from "@mui/icons-material/Category"
 
 const drawerWidth = 240
 
@@ -67,6 +67,12 @@ const menuItems = [
     icon: <ShoppingCartIcon />,
     path: "/admin/orders",
     badge: "5",
+  },
+  {
+    title: "Quản lý danh mục",
+    icon: <CategoryIcon />,
+    path: "/admin/categories",
+    badge: null,
   },
   {
     title: "Người dùng",

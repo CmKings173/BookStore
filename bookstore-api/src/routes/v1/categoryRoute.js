@@ -16,4 +16,12 @@ Router.route('/create')
 Router.route('/')
   .get(categoryController.getCategories)
 
+Router.route('/:id')
+  .delete(
+    authMiddleware.isAuthorized,
+    authMiddleware.checkRole('admin'),
+    categoryValidation.deleteItem,
+    categoryController.deleteCategory
+  )
+
 export const categoryRoute= Router

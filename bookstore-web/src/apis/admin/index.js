@@ -38,3 +38,21 @@ export const updateUserAPI = async (userId, data) => {
   return response.data
 }
 
+// Category APIs
+export const getAllCategoriesAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/categories`)
+  return response.data
+}
+
+export const createCategoryAPI = async (categoryData) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/categories/create`, categoryData)
+  toast.success("Tạo danh mục thành công")
+  return response.data
+}
+
+export const deleteCategoryAPI = async (categoryId) => {
+  const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/categories/${categoryId}`)
+  toast.success("Xóa danh mục thành công")
+  return response.data
+}
+

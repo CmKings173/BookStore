@@ -47,12 +47,23 @@ const getCategories = async () => {
     throw new Error(error)
   }
 }
+
+const deleteCategory = async (id) => {
+  try {
+    const result = await GET_DB().collection(CATEGORY_COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) })
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const categoryModel = {
   CATEGORY_COLLECTION_NAME,
   CATEGORY_COLLECTION_SCHEMA,
   createNew,
   getCategories,
-  findOneById
+  findOneById,
+  deleteCategory
 //   getDetails,
 //   pushColumnOrderIds,
 //   update,
